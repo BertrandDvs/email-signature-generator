@@ -140,3 +140,47 @@ input[type="text"], input[type="email"], input[type="url"], input[type="tel"], i
   border-color: var(--accent);
   color: #134CDD;
 }
+
+/* --- Highlight (preview only) --- */
+.preview .preview-card { position: relative; } /* permet l’overlay absolu */
+
+.spotlight {
+  position: absolute;
+  border-radius: 10px;
+  pointer-events: none;
+  z-index: 5;
+  /* halo + liseré interne */
+  box-shadow:
+    0 0 0 0 rgba(49,107,255,.20),
+    0 0 0 2px rgba(49,107,255,.85) inset;
+  animation: haloPulse 900ms ease-out forwards;
+}
+
+@keyframes haloPulse {
+  0%   { box-shadow: 0 0 0 0 rgba(49,107,255,.25), 0 0 0 2px rgba(49,107,255,.90) inset; opacity: 1; }
+  60%  { box-shadow: 0 0 0 12px rgba(49,107,255,.18), 0 0 0 2px rgba(49,107,255,.65) inset; }
+  100% { box-shadow: 0 0 0 22px rgba(49,107,255,0), 0 0 0 2px rgba(49,107,255,0) inset; opacity: 0; }
+}
+
+.spotlight-tip {
+  position: absolute;
+  top: -8px; left: 0; transform: translateY(-100%);
+  background: #111; color: #fff;
+  font-size: 12px; line-height: 1;
+  padding: 6px 8px; border-radius: 8px;
+  white-space: nowrap; opacity: 0; z-index: 6;
+  animation: tipFade 900ms ease-out forwards;
+}
+.spotlight-tip::after {
+  content: ""; position: absolute; left: 10px; top: 100%;
+  border: 6px solid transparent; border-top-color: #111;
+}
+
+/* si pas de place au-dessus, on place l’étiquette en dessous */
+.spotlight-tip.below {
+  top: auto; bottom: -8px; transform: translateY(100%);
+}
+.spotlight-tip.below::after {
+  top: auto; bottom: 100%;
+  border-top-color: transparent; border-bottom-color: #111;
+}

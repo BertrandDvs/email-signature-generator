@@ -74,6 +74,10 @@ const btns = {
   reset: byId('reset'),
 };
 
+/* Rendre compatibles les onclick inline du HTML (avatarFile.click()) */
+window.avatarFile = inputs.avatarFile;
+window.bannerFile = inputs.bannerFile;
+
 /* ===== Placeholders (SVG data URIs) ===== */
 function rectSVG(w, h, color, label) {
   const fontSize = 14;
@@ -98,7 +102,10 @@ function fileToDataURL(file) {
 function testImage(url){
   return new Promise((resolve, reject) => {
     const img = new Image();
-    img.onload = () => resolve(true);
+    img.onload = () => {
+      if ((img.naturalWidth || 0) > 0 && (img.naturalHeight || 0) > 0) resolve(true);
+      else reject(false);
+    };
     img.onerror = () => reject(false);
     img.src = url;
   });
@@ -106,10 +113,11 @@ function testImage(url){
 
 /* ===== Helpers pour Google Drive ===== */
 function driveCandidates(fileId, size = 512) {
+  // ordre robuste : download > view > thumbnail
   return [
-    `https://drive.google.com/thumbnail?id=${fileId}&sz=w${size}`,
-    `https://drive.google.com/uc?export=view&id=${fileId}`,
     `https://drive.google.com/uc?export=download&id=${fileId}`,
+    `https://drive.google.com/uc?export=view&id=${fileId}`,
+    `https://drive.google.com/thumbnail?id=${fileId}&sz=w${size}`,
   ];
 }
 async function pickFirstWorking(urls) {
@@ -156,7 +164,8 @@ function toTelHref(raw='') {
 }
 
 /* ===== Signature builder (HTML) ===== */
-function buildEmailHTML(state) {
+/* align: 'center' pour la preview, 'left' pour l'export */
+function buildEmailHTML(state, { align = 'center' } = {}) {
   const {
     name, role, email, phone,
     linkedin, linkedinEnabled,
@@ -178,26 +187,24 @@ function buildEmailHTML(state) {
   const emailRow = email ? `<tr><td style="padding:0;"><a href="mailto:${escapeHtml(email)}" style="color:${COLOR_MUTED}; text-decoration:none;">${escapeHtml(email)}</a></td></tr>` : '';
 
   const rightIcons = (linkedinEnabled || lemcalEnabled) ? `
-    <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="white-space:nowrap;">
+    <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="white-space:nowrap; font-size:0; line-height:0;">
       <tbody>
         <tr>
-          ${linkedinEnabled ? `<td style="padding-left:12px;">${linkedinCell}</td>` : ''}
-          ${lemcalEnabled ? `<td style="padding-left:12px;">${lemcalCell}</td>` : ''}
+          ${linkedinEnabled ? `<td style="padding-left:12px; vertical-align:middle;">${linkedinCell}</td>` : ''}
+          ${lemcalEnabled ? `<td style="padding-left:12px; vertical-align:middle;">${lemcalCell}</td>` : ''}
         </tr>
       </tbody>
     </table>` : '';
 
-  return `
-<table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center" style="border-collapse:collapse; mso-table-lspace:0pt; mso-table-rspace:0pt; color:${COLOR_TEXT}; font-family:Arial,Helvetica,sans-serif; max-width:${PREVIEW_MAX_WIDTH}px; width:100%;">
-  <tbody>
-
+  // --- contenu commun (sans table racine)
+  const contentRows = `
     <!-- HEADER -->
     <tr>
       <td>
-        <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="width:100%;">
+        <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="width:100%; font-size:0;">
           <tbody>
             <tr>
-              <td valign="top" style="vertical-align:top;">
+              <td valign="top" style="vertical-align:top; font-size:16px;">
                 <div style="font-size:18px; font-weight:800; color:${COLOR_NAME}; line-height:1.2;">${escapeHtml(name)}</div>
                 <div style="font-size:14px; color:${COLOR_ROLE}; line-height:1.5;">${escapeHtml(role)}</div>
               </td>
@@ -257,11 +264,48 @@ function buildEmailHTML(state) {
     <!-- BANNER -->
     <tr><td style="height:16px;"></td></tr>
     <tr>
-      <td align="center">
+      <td align="${align === 'left' ? 'left' : 'center'}">
         <img src="${banner}" alt="Banner" style="display:block; width:100%; max-width:${PREVIEW_MAX_WIDTH}px; height:auto; border-radius:8px;" />
       </td>
     </tr>
+  `;
 
+  // --- enveloppe selon l’alignement voulu
+  if (align === 'left') {
+    return `
+<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="border-collapse:collapse; mso-table-lspace:0pt; mso-table-rspace:0pt;">
+  <tbody><tr>
+    <td align="left" style="padding:0; margin:0;">
+
+      <!--[if mso]>
+      <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="${PREVIEW_MAX_WIDTH}"><tr><td>
+      <![endif]-->
+
+      <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="left"
+             style="border-collapse:collapse; mso-table-lspace:0pt; mso-table-rspace:0pt;
+                    color:${COLOR_TEXT}; font-family:Arial,Helvetica,sans-serif;
+                    width:100%; max-width:${PREVIEW_MAX_WIDTH}px;">
+        <tbody>
+          ${contentRows}
+        </tbody>
+      </table>
+
+      <!--[if mso]></td></tr></table><![endif]-->
+
+    </td>
+  </tr></tbody>
+</table>
+`.trim();
+  }
+
+  // align === 'center' (preview)
+  return `
+<table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center"
+       style="border-collapse:collapse; mso-table-lspace:0pt; mso-table-rspace:0pt;
+              color:${COLOR_TEXT}; font-family:Arial,Helvetica,sans-serif;
+              max-width:${PREVIEW_MAX_WIDTH}px; width:100%;">
+  <tbody>
+    ${contentRows}
   </tbody>
 </table>
 `.trim();
@@ -270,7 +314,7 @@ function buildEmailHTML(state) {
 /* ===== Preview renderer ===== */
 function renderPreview() {
   const state = collectState();
-  const html = buildEmailHTML(state);
+  const html = buildEmailHTML(state, { align: 'center' }); // preview centrée
   els.preview.innerHTML = html;
 
   const card = els.previewCard;
@@ -340,7 +384,7 @@ async function copyHtmlToClipboard(html, plainTextFallback = '') {
 
 /* ===== Buttons ===== */
 btns.copyGmail.addEventListener('click', async () => {
-  const html = wrapForGmail(buildEmailHTML(collectState()));
+  const html = wrapForGmail(buildEmailHTML(collectState(), { align: 'left' })); // export à gauche
   try {
     await copyHtmlToClipboard(html, '');
     pulse(btns.copyGmail);
@@ -368,7 +412,7 @@ btns.reset.addEventListener('click', () => {
 
 /* ===== Utils ===== */
 function wrapForGmail(innerHTML){
-  return `<!-- signature -->\n<div>${innerHTML}</div>`;
+  return `<!-- signature --><div style="text-align:left">${innerHTML}</div>`;
 }
 function escapeHtml(str=''){
   return str.replace(/[&<>"']/g, s => ({
@@ -392,7 +436,7 @@ window.addEventListener('load', async () => {
     ] = await Promise.all([
       pickFirstWorking(driveCandidates(DRIVE_LOGO_ID, 512)),
       pickFirstWorking(driveCandidates(DRIVE_LINKEDIN_ID, 256)),
-      pickFirstWorking(driveCandidates(DRIVE_LEMCAL_ID, 256)),  // ↑ taille + robuste
+      pickFirstWorking(driveCandidates(DRIVE_LEMCAL_ID, 256)),
       pickFirstWorking(driveCandidates(DRIVE_AVATAR_ID, 256)),
       pickFirstWorking(driveCandidates(DRIVE_BANNER_ID, 800)),
     ]);
