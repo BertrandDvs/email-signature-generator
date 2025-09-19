@@ -1,4 +1,4 @@
-/* ===== Preview config ===== */
+/* ===== Basic config ===== */
 const BASE_PREVIEW_SCALE = 0.92;
 const PREVIEW_MAX_WIDTH = 500;
 
@@ -11,35 +11,37 @@ const COLOR_TEXT = '#17161B';
 const COLOR_MUTED = '#566F8F';
 const COLOR_ACCENT = '#316BFF';
 
-/* ===== Sizes (fixes) ===== */
+/* ===== Sizes ===== */
 const PHOTO_SIZE = 89;
-const ICON_SIZE = 40; // LinkedIn & Lemcal
+const ICON_SIZE = 40;
 
 /* ===== Fixed content ===== */
 const WEBSITE_FIXED = 'www.lemlist.com';
 
-/* ===== Google Drive file IDs ===== */
-const DRIVE_LOGO_ID     = '1ADClWTNozOIXgKZQrzLBgo4-R3dsW5Eh';
-const DRIVE_LINKEDIN_ID = '1T3Znjw-xOjmNxE1k0QBEKNp59TPRBe9k';
-const DRIVE_LEMCAL_ID   = '1uTcZdXhipZ8Lxpq8kIwSvNL5ZMx5zt1o';
-const DRIVE_AVATAR_ID   = '1CkFTdse9AbONKnYaQpJl8oJ1tvQi67Yv';
-const DRIVE_BANNER_ID   = '1OKIbkT8Np5tN6howCqga6Hgfxh4VzXRt';
+/* ===== Local assets (change paths if needed) ===== */
+const ASSETS = {
+  logo: 'icons/logo.png',
+  linkedin: 'icons/linkedin.png',
+  lemcal: 'icons/lemcal.png',
+  avatarPlaceholder: 'icons/avatar-placeholder.png',
+  bannerPlaceholder: 'icons/banner-placeholder.png',
+};
 
-/* ===== Sources d'images (résolues au chargement) ===== */
-let LOGO_SRC = '';
-let ICON_LINKEDIN_SRC = '';
-let ICON_LEMCAL_SRC = '';
-let AVATAR_DEFAULT_SRC = '';
-let BANNER_DEFAULT_SRC = '';
+/* ===== Image sources (no web fetch) ===== */
+let LOGO_SRC           = ASSETS.logo;
+let ICON_LINKEDIN_SRC  = ASSETS.linkedin;
+let ICON_LEMCAL_SRC    = ASSETS.lemcal;
+let AVATAR_DEFAULT_SRC = ASSETS.avatarPlaceholder;
+let BANNER_DEFAULT_SRC = ASSETS.bannerPlaceholder;
 
-/* ===== Fallbacks ===== */
-const LOGO_FALLBACK = rectSVG(100, 28, COLOR_ACCENT, 'lemlist');
-const LINKEDIN_FALLBACK = rectSVG(ICON_SIZE, ICON_SIZE, '#0A66C2', 'in');
-const LEMCAL_FALLBACK   = rectSVG(ICON_SIZE, ICON_SIZE, '#316BFF', 'cal');
-const PLACEHOLDER_AVATAR = rectSVG(PHOTO_SIZE, PHOTO_SIZE, '#E9EEF2', 'Photo');
-const PLACEHOLDER_BANNER = rectSVG(600, 120, '#DDEEE8', 'Banner 500px');
+/* ===== Fallbacks (SVG data URIs if local files are absent) ===== */
+const LOGO_FALLBACK        = rectSVG(100, 28, COLOR_ACCENT, 'lemlist');
+const LINKEDIN_FALLBACK    = rectSVG(ICON_SIZE, ICON_SIZE, '#0A66C2', 'in');
+const LEMCAL_FALLBACK      = rectSVG(ICON_SIZE, ICON_SIZE, '#316BFF', 'cal');
+const PLACEHOLDER_AVATAR   = rectSVG(PHOTO_SIZE, PHOTO_SIZE, '#E9EEF2', 'Photo');
+const PLACEHOLDER_BANNER   = rectSVG(600, 120, '#DDEEE8', 'Banner');
 
-/* ===== DOM helpers ===== */
+/* ===== DOM ===== */
 const $ = (sel) => document.querySelector(sel);
 const byId = (id) => document.getElementById(id);
 
@@ -48,12 +50,10 @@ const inputs = {
   role: byId('role'),
   email: byId('email'),
   phone: byId('phone'),
-
   linkedin: byId('linkedin'),
   linkedinToggle: byId('linkedinToggle'),
   lemcal: byId('lemcal'),
   lemcalToggle: byId('lemcalToggle'),
-
   avatarFile: byId('avatarFile'),
   bannerFile: byId('bannerFile'),
 };
@@ -74,11 +74,11 @@ const btns = {
   reset: byId('reset'),
 };
 
-/* Rendre compatibles les onclick inline du HTML (avatarFile.click()) */
+/* si ton HTML utilise onclick="avatarFile.click()" */
 window.avatarFile = inputs.avatarFile;
 window.bannerFile = inputs.bannerFile;
 
-/* ===== Placeholders (SVG data URIs) ===== */
+/* ===== Utils ===== */
 function rectSVG(w, h, color, label) {
   const fontSize = 14;
   const svg =
@@ -88,8 +88,6 @@ function rectSVG(w, h, color, label) {
     `</svg>`;
   return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
 }
-
-/* ===== Image utils ===== */
 function fileToDataURL(file) {
   return new Promise((res, rej) => {
     if (!file) return res(null);
@@ -99,40 +97,53 @@ function fileToDataURL(file) {
     reader.readAsDataURL(file);
   });
 }
-function testImage(url){
-  return new Promise((resolve, reject) => {
-    const img = new Image();
-    img.onload = () => {
-      if ((img.naturalWidth || 0) > 0 && (img.naturalHeight || 0) > 0) resolve(true);
-      else reject(false);
-    };
-    img.onerror = () => reject(false);
-    img.src = url;
-  });
+function toTelHref(raw='') {
+  const trimmed = raw.trim();
+  const plus = trimmed.startsWith('+') ? '+' : '';
+  const digits = trimmed.replace(/[^\d]/g, '');
+  return `tel:${plus}${digits}`;
 }
-
-/* ===== Helpers pour Google Drive ===== */
-function driveCandidates(fileId, size = 512) {
-  // ordre robuste : download > view > thumbnail
-  return [
-    `https://drive.google.com/uc?export=download&id=${fileId}`,
-    `https://drive.google.com/uc?export=view&id=${fileId}`,
-    `https://drive.google.com/thumbnail?id=${fileId}&sz=w${size}`,
-  ];
+function escapeHtml(str=''){
+  return str.replace(/[&<>"']/g, s => ({
+    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+  }[s]));
 }
-async function pickFirstWorking(urls) {
-  for (const url of urls) {
-    try { await testImage(url); return url; } catch (_) {}
+function wrapForGmail(innerHTML){
+  return `<!-- signature --><div style="text-align:left">${innerHTML}</div>`;
+}
+async function copyHtmlToClipboard(html, plainTextFallback = '') {
+  if (window.ClipboardItem && navigator.clipboard?.write) {
+    const data = new ClipboardItem({
+      'text/html': new Blob([html], { type: 'text/html' }),
+      'text/plain': new Blob([plainTextFallback || html.replace(/<[^>]+>/g,'')], { type: 'text/plain' }),
+    });
+    await navigator.clipboard.write([data]);
+    return;
   }
-  return null;
+  await navigator.clipboard.writeText(plainTextFallback || html);
+}
+function showCopied(btn, label = 'Copied') {
+  if (!btn.dataset.label) btn.dataset.label = btn.textContent.trim();
+  btn.disabled = true;
+  btn.classList.add('copied');
+  btn.innerHTML = `
+    <span class="copied-anim" aria-hidden="true">
+      <svg viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></svg>
+      ${label}
+    </span>
+  `;
+  setTimeout(() => {
+    btn.classList.remove('copied');
+    btn.disabled = false;
+    btn.innerHTML = btn.dataset.label;
+  }, 1200);
 }
 
-/* ===== State & cache ===== */
+/* ===== State ===== */
 const imageCache = {
-  avatar: PLACEHOLDER_AVATAR,
-  banner: PLACEHOLDER_BANNER,
+  avatar: AVATAR_DEFAULT_SRC || PLACEHOLDER_AVATAR,
+  banner: BANNER_DEFAULT_SRC || PLACEHOLDER_BANNER,
 };
-
 function collectState() {
   const name = inputs.name.value.trim();
   const role = inputs.role.value.trim();
@@ -150,21 +161,12 @@ function collectState() {
     linkedin, linkedinEnabled,
     lemcal, lemcalEnabled,
     avatar: imageCache.avatar,
-    logo: LOGO_SRC,
+    logo: LOGO_SRC || LOGO_FALLBACK,
     banner: imageCache.banner,
   };
 }
 
-/* ===== tel: href ===== */
-function toTelHref(raw='') {
-  const trimmed = raw.trim();
-  let plus = trimmed.startsWith('+') ? '+' : '';
-  const digits = trimmed.replace(/[^\d]/g, '');
-  return `tel:${plus}${digits}`;
-}
-
-/* ===== Signature builder (HTML) ===== */
-/* align: 'center' pour la preview, 'left' pour l'export */
+/* ===== Email HTML ===== */
 function buildEmailHTML(state, { align = 'center' } = {}) {
   const {
     name, role, email, phone,
@@ -196,7 +198,6 @@ function buildEmailHTML(state, { align = 'center' } = {}) {
       </tbody>
     </table>` : '';
 
-  // --- contenu commun (sans table racine)
   const contentRows = `
     <!-- HEADER -->
     <tr>
@@ -251,7 +252,6 @@ function buildEmailHTML(state, { align = 'center' } = {}) {
                   </tbody>
                 </table>
               </td>
-
               <td valign="middle" align="right" style="white-space:nowrap; padding-left:12px;">
                 ${rightIcons}
               </td>
@@ -270,52 +270,37 @@ function buildEmailHTML(state, { align = 'center' } = {}) {
     </tr>
   `;
 
-  // --- enveloppe selon l’alignement voulu
   if (align === 'left') {
     return `
 <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="border-collapse:collapse; mso-table-lspace:0pt; mso-table-rspace:0pt;">
   <tbody><tr>
     <td align="left" style="padding:0; margin:0;">
-
-      <!--[if mso]>
-      <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="${PREVIEW_MAX_WIDTH}"><tr><td>
-      <![endif]-->
-
+      <!--[if mso]><table role="presentation" cellpadding="0" cellspacing="0" border="0" width="${PREVIEW_MAX_WIDTH}"><tr><td><![endif]-->
       <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="left"
              style="border-collapse:collapse; mso-table-lspace:0pt; mso-table-rspace:0pt;
                     color:${COLOR_TEXT}; font-family:Arial,Helvetica,sans-serif;
                     width:100%; max-width:${PREVIEW_MAX_WIDTH}px;">
-        <tbody>
-          ${contentRows}
-        </tbody>
+        <tbody>${contentRows}</tbody>
       </table>
-
       <!--[if mso]></td></tr></table><![endif]-->
-
     </td>
   </tr></tbody>
-</table>
-`.trim();
+</table>`.trim();
   }
 
-  // align === 'center' (preview)
   return `
 <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center"
        style="border-collapse:collapse; mso-table-lspace:0pt; mso-table-rspace:0pt;
               color:${COLOR_TEXT}; font-family:Arial,Helvetica,sans-serif;
               max-width:${PREVIEW_MAX_WIDTH}px; width:100%;">
-  <tbody>
-    ${contentRows}
-  </tbody>
-</table>
-`.trim();
+  <tbody>${contentRows}</tbody>
+</table>`.trim();
 }
 
 /* ===== Preview renderer ===== */
 function renderPreview() {
   const state = collectState();
-  const html = buildEmailHTML(state, { align: 'center' }); // preview centrée
-  els.preview.innerHTML = html;
+  els.preview.innerHTML = buildEmailHTML(state, { align: 'center' }); // preview centrée
 
   const card = els.previewCard;
   card.style.maxWidth = PREVIEW_MAX_WIDTH + 'px';
@@ -336,65 +321,32 @@ function renderPreview() {
 /* ===== File inputs ===== */
 inputs.avatarFile.addEventListener('change', async (e) => {
   const f = e.target.files?.[0];
-  if (f) {
-    imageCache.avatar = await fileToDataURL(f);
-    fileBtns.avatar.textContent = f.name;
-    fileBtns.avatar.classList.add('used');
-  } else {
-    imageCache.avatar = AVATAR_DEFAULT_SRC || PLACEHOLDER_AVATAR;
-    fileBtns.avatar.textContent = 'Upload photo';
-    fileBtns.avatar.classList.remove('used');
-  }
+  imageCache.avatar = f ? await fileToDataURL(f) : (AVATAR_DEFAULT_SRC || PLACEHOLDER_AVATAR);
+  fileBtns.avatar.textContent = f ? f.name : 'Upload photo';
+  fileBtns.avatar.classList.toggle('used', !!f);
   renderPreview();
 });
 inputs.bannerFile.addEventListener('change', async (e) => {
   const f = e.target.files?.[0];
-  if (f) {
-    imageCache.banner = await fileToDataURL(f);
-    fileBtns.banner.textContent = f.name;
-    fileBtns.banner.classList.add('used');
-  } else {
-    imageCache.banner = BANNER_DEFAULT_SRC || PLACEHOLDER_BANNER;
-    fileBtns.banner.textContent = 'Upload banner';
-    fileBtns.banner.classList.remove('used');
-  }
+  imageCache.banner = f ? await fileToDataURL(f) : (BANNER_DEFAULT_SRC || PLACEHOLDER_BANNER);
+  fileBtns.banner.textContent = f ? f.name : 'Upload banner';
+  fileBtns.banner.classList.toggle('used', !!f);
   renderPreview();
 });
 
 /* ===== Inputs change ===== */
-[
-  inputs.name, inputs.role, inputs.email, inputs.phone,
-  inputs.linkedin, inputs.linkedinToggle,
-  inputs.lemcal, inputs.lemcalToggle
-].forEach(el => el && el.addEventListener('input', renderPreview));
-[inputs.linkedinToggle, inputs.lemcalToggle].forEach(el => el && el.addEventListener('change', renderPreview));
-
-/* ===== Clipboard helper ===== */
-async function copyHtmlToClipboard(html, plainTextFallback = '') {
-  if (window.ClipboardItem && navigator.clipboard?.write) {
-    const data = new ClipboardItem({
-      'text/html': new Blob([html], { type: 'text/html' }),
-      'text/plain': new Blob([plainTextFallback || html.replace(/<[^>]+>/g,'')], { type: 'text/plain' }),
-    });
-    await navigator.clipboard.write([data]);
-    return;
-  }
-  await navigator.clipboard.writeText(plainTextFallback || html);
-}
+[inputs.name, inputs.role, inputs.email, inputs.phone, inputs.linkedin, inputs.lemcal]
+  .forEach(el => el && el.addEventListener('input', renderPreview));
+[inputs.linkedinToggle, inputs.lemcalToggle]
+  .forEach(el => el && el.addEventListener('change', renderPreview));
 
 /* ===== Buttons ===== */
 btns.copyGmail.addEventListener('click', async () => {
   const html = wrapForGmail(buildEmailHTML(collectState(), { align: 'left' })); // export à gauche
-  try {
-    await copyHtmlToClipboard(html, '');
-    pulse(btns.copyGmail);
-  } catch (e) {
-    await navigator.clipboard.writeText(html);
-    pulse(btns.copyGmail);
-  }
+  try { await copyHtmlToClipboard(html, ''); }
+  catch { await navigator.clipboard.writeText(html); }
+  finally { showCopied(btns.copyGmail); } // ✓ Copied
 });
-
-
 
 btns.openGmail.addEventListener('click', () => {
   window.open('https://mail.google.com/mail/u/0/#settings/general', '_blank');
@@ -412,61 +364,20 @@ btns.reset.addEventListener('click', () => {
   renderPreview();
 });
 
-/* ===== Utils ===== */
-function wrapForGmail(innerHTML){
-  return `<!-- signature --><div style="text-align:left">${innerHTML}</div>`;
-}
-function escapeHtml(str=''){
-  return str.replace(/[&<>"']/g, s => ({
-    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
-  }[s]));
-}
-function pulse(btn){
-  btn.style.transform = 'scale(0.98)';
-  setTimeout(()=>{ btn.style.transform = ''; }, 120);
-}
-
 /* ===== Init ===== */
-window.addEventListener('load', async () => {
-  try {
-    const [
-      resolvedLogo,
-      resolvedLinkedin,
-      resolvedLemcal,
-      resolvedAvatar,
-      resolvedBanner
-    ] = await Promise.all([
-      pickFirstWorking(driveCandidates(DRIVE_LOGO_ID, 512)),
-      pickFirstWorking(driveCandidates(DRIVE_LINKEDIN_ID, 256)),
-      pickFirstWorking(driveCandidates(DRIVE_LEMCAL_ID, 256)),
-      pickFirstWorking(driveCandidates(DRIVE_AVATAR_ID, 256)),
-      pickFirstWorking(driveCandidates(DRIVE_BANNER_ID, 800)),
-    ]);
+window.addEventListener('load', () => {
+  // Si tu veux forcer les placeholders générés (sans fichiers), dé-commente :
+  // LOGO_SRC = LOGO_FALLBACK;
+  // ICON_LINKEDIN_SRC = LINKEDIN_FALLBACK;
+  // ICON_LEMCAL_SRC = LEMCAL_FALLBACK;
+  // AVATAR_DEFAULT_SRC = PLACEHOLDER_AVATAR;
+  // BANNER_DEFAULT_SRC = PLACEHOLDER_BANNER;
 
-    LOGO_SRC = resolvedLogo || LOGO_FALLBACK;
-    ICON_LINKEDIN_SRC = resolvedLinkedin || LINKEDIN_FALLBACK;
-    ICON_LEMCAL_SRC = resolvedLemcal || LEMCAL_FALLBACK;
-    AVATAR_DEFAULT_SRC = resolvedAvatar || PLACEHOLDER_AVATAR;
-    BANNER_DEFAULT_SRC = resolvedBanner || PLACEHOLDER_BANNER;
+  imageCache.avatar = AVATAR_DEFAULT_SRC || PLACEHOLDER_AVATAR;
+  imageCache.banner = BANNER_DEFAULT_SRC || PLACEHOLDER_BANNER;
+  fileBtns.avatar.textContent = 'Upload photo';
+  fileBtns.banner.textContent = 'Upload banner';
 
-    imageCache.avatar = AVATAR_DEFAULT_SRC;
-    imageCache.banner = BANNER_DEFAULT_SRC;
-
-    // init boutons upload (état vierge)
-    fileBtns.avatar.textContent = 'Upload photo';
-    fileBtns.banner.textContent = 'Upload banner';
-
-  } catch (_) {
-    LOGO_SRC = LOGO_FALLBACK;
-    ICON_LINKEDIN_SRC = LINKEDIN_FALLBACK;
-    ICON_LEMCAL_SRC = LEMCAL_FALLBACK;
-    AVATAR_DEFAULT_SRC = PLACEHOLDER_AVATAR;
-    BANNER_DEFAULT_SRC = PLACEHOLDER_BANNER;
-
-    imageCache.avatar = AVATAR_DEFAULT_SRC;
-    imageCache.banner = BANNER_DEFAULT_SRC;
-  } finally {
-    renderPreview();
-    window.addEventListener('resize', renderPreview);
-  }
+  renderPreview();
+  window.addEventListener('resize', renderPreview);
 });
