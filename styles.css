@@ -241,16 +241,11 @@ input[type="text"], input[type="email"], input[type="url"], input[type="tel"], i
   to { stroke-dashoffset: 0; }
 }
 
-.signature-base {
-  position: relative; /* nécessaire pour positionner le badge */
-}
-
 .site-badge {
   position: absolute;
-  bottom: 12px;   /* marge avec le bas */
-  left: 12px;     /* marge avec le bord gauche */
-  height: 32px;   /* ajuste selon ton badge */
+  bottom: 20px;   /* marge avec le bas */
+  left: 20px;     /* marge avec le bord gauche */
+  height: 80px;   /* ajuste selon ton badge */
   pointer-events: none; /* évite de cliquer dessus */
-  opacity: 0.9;   /* optionnel : un petit effet */
+  opacity: 1;   /* optionnel : un petit effet */
 }
-

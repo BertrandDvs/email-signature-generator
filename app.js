@@ -18,7 +18,19 @@ const ICON_SIZE = 40;
 /* ===== Fixed content ===== */
 const WEBSITE_FIXED = 'www.lemlist.com';
 
-/* ===== Local assets (change paths if needed) ===== */
+/* ============================================================================
+   PUBLIC ASSETS (GitHub Pages) — pour l'export Gmail
+   ========================================================================== */
+const PUBLIC_ASSET_BASE = 'https://bertranddvs.github.io/email-signature-generator/icons/';
+const PUBLIC_ASSETS = {
+  logo:    PUBLIC_ASSET_BASE + 'logo.gif',
+  linkedin:PUBLIC_ASSET_BASE + 'linkedin.png',
+  lemcal:  PUBLIC_ASSET_BASE + 'lemcal.png',
+  avatar:  PUBLIC_ASSET_BASE + 'avatar-placeholder.png',
+  banner:  PUBLIC_ASSET_BASE + 'banner-placeholder.png',
+};
+
+/* ===== Local assets (preview / app) ===== */
 const ASSETS = {
   logo: 'icons/logo.gif',
   linkedin: 'icons/linkedin.png',
@@ -125,18 +137,11 @@ async function copyHtmlToClipboard(html, plainTextFallback = '') {
 
 /* ===== Animation "Copied" fiable ===== */
 function showCopied(btn, label = 'Copied') {
-  // Stocke le label initial si besoin
   if (!btn.dataset.label) btn.dataset.label = btn.textContent.trim();
-
-  // Figer la largeur pour éviter le "jump" pendant l'animation
   const styles = getComputedStyle(btn);
   btn.style.width = styles.width;
-
-  // Désactiver et styliser
   btn.disabled = true;
   btn.classList.add('is-copied');
-
-  // Contenu animé avec check SVG (stroke animé)
   btn.innerHTML = `
     <span class="copied-anim" aria-hidden="true">
       <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -145,8 +150,6 @@ function showCopied(btn, label = 'Copied') {
       <span>${label}</span>
     </span>
   `;
-
-  // Restauration
   window.setTimeout(() => {
     btn.classList.remove('is-copied');
     btn.disabled = false;
@@ -313,6 +316,47 @@ function buildEmailHTML(state, { align = 'center' } = {}) {
 </table>`.trim();
 }
 
+/* ============================================================================
+   Sanitize des sources pour l’export (force HTTPS public GitHub Pages)
+   ========================================================================== */
+function sanitizeSrcForEmail(src, kind) {
+  if (!src) return PUBLIC_ASSETS[kind] || '';
+  if (/^https:\/\//i.test(src)) return src;                 // déjà OK
+  if (/^data:/i.test(src)) return PUBLIC_ASSETS[kind] || ''; // remplace base64
+  if (!/^https?:\/\//i.test(src)) {                         // chemin relatif → absolu
+    return PUBLIC_ASSET_BASE + src.replace(/^(\.\/)?/, '');
+  }
+  return src;
+}
+
+/* Variante de rendu pour l’export (sans toucher à la preview) */
+function buildEmailHTMLForExport(state, opts) {
+  const safeState = {
+    ...state,
+    logo:   sanitizeSrcForEmail(state.logo,   'logo'),
+    avatar: sanitizeSrcForEmail(state.avatar, 'avatar'),
+    banner: sanitizeSrcForEmail(state.banner, 'banner'),
+  };
+
+  // Sauvegarde, puis force des URLs publiques pour les icônes
+  const _iconLinkedin = ICON_LINKEDIN_SRC;
+  const _iconLemcal   = ICON_LEMCAL_SRC;
+
+  const prevLinkedin = ICON_LINKEDIN_SRC || LINKEDIN_FALLBACK;
+  const prevLemcal   = ICON_LEMCAL_SRC   || LEMCAL_FALLBACK;
+
+  ICON_LINKEDIN_SRC = sanitizeSrcForEmail(prevLinkedin, 'linkedin');
+  ICON_LEMCAL_SRC   = sanitizeSrcForEmail(prevLemcal,   'lemcal');
+
+  const html = buildEmailHTML(safeState, opts);
+
+  // Restaure les valeurs preview
+  ICON_LINKEDIN_SRC = _iconLinkedin;
+  ICON_LEMCAL_SRC   = _iconLemcal;
+
+  return html;
+}
+
 /* ===== Preview renderer ===== */
 function renderPreview() {
   const state = collectState();
@@ -358,7 +402,9 @@ inputs.bannerFile.addEventListener('change', async (e) => {
 
 /* ===== Buttons ===== */
 btns.copyGmail.addEventListener('click', async () => {
-  const html = wrapForGmail(buildEmailHTML(collectState(), { align: 'left' })); // export à gauche
+  // Export aligné gauche + sanitation des images pour Gmail
+  const htmlExport = buildEmailHTMLForExport(collectState(), { align: 'left' });
+  const html = wrapForGmail(htmlExport);
   try { await copyHtmlToClipboard(html, ''); }
   catch { await navigator.clipboard.writeText(html); }
   finally { showCopied(btns.copyGmail); } // ✓ Copied
