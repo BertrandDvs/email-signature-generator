@@ -11,7 +11,7 @@
 html,body{ height:100% }
 html,body{ margin:0; padding:0; overflow:hidden }
 body{
-  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial;
+  font-family: 'Inter', sans-serif;
   color: var(--text);
 
   /* Fond texturé */
@@ -33,11 +33,13 @@ body{
   appearance:none; cursor:pointer; white-space:nowrap;
   border:1px solid var(--border); background:#fff; color:#17161B;
   padding:8px 12px; border-radius:10px; font-size:14px; line-height:24px;
+  transition: background .2s ease, border-color .2s ease, color .2s ease;
 }
 .btn:hover{ border-color:#cbcbcb }
 .btn.primary{ background: var(--accent); border-color: var(--accent); color:#fff }
 .btn.ghost{ background:transparent; }
 
+/* Primary gradient button */
 .btnprim {
   border-radius: 8px;
   padding-left: 16px;
@@ -46,8 +48,8 @@ body{
   border: 1px solid var(--Primary-300, #316BFF);
   background: linear-gradient(0deg, var(--Button-button-primary-300, #316BFF) -10%, var(--Button-button-primary-275, #477BFF) 100%);
   box-shadow: 0 0 6px 0 rgba(0, 0, 0, 0.02), 0 2px 4px 0 rgba(0, 0, 0, 0.08);
+  transition: background .2s ease, border-color .2s ease, color .2s ease;
 }
-
 .btnprim:hover { 
   border-radius: 8px;
   padding-left: 16px;
@@ -55,10 +57,7 @@ body{
   border: 1px solid var(--primary-color);
   background: linear-gradient(0deg, var(--Colors-Button-button-primary-300, #316BFF) 0%, var(--Colors-Button-button-primary-325, #1F5EFF) 100%);
   box-shadow: 0 0 6px 0 var(--shadow-2), 0 2px 4px 0 var(--shadow-8);
- }
- 
-.btn.primary{ background: var(--accent); border-color: var(--accent); color:#fff }
-.btn.ghost{ background:transparent; }
+}
 
 /* Layout */
 .wrap{
@@ -171,7 +170,6 @@ input[type="text"], input[type="email"], input[type="url"], input[type="tel"], i
   border-radius: 10px;
   pointer-events: none;
   z-index: 5;
-  /* halo + liseré interne */
   box-shadow:
     0 0 0 0 rgba(49,107,255,.20),
     0 0 0 2px rgba(49,107,255,.85) inset;
@@ -206,3 +204,53 @@ input[type="text"], input[type="email"], input[type="url"], input[type="tel"], i
   top: auto; bottom: 100%;
   border-top-color: transparent; border-bottom-color: #111;
 }
+
+/* ====== Copied animation styles ====== */
+/* Empêche le saut de mise en page quand on change le contenu : transition et largeur figée côté JS */
+#copyGmail { will-change: transform; }
+
+.btn.is-copied, .btnprim.is-copied {
+  border-color: var(--accent);
+  background: #134CDD;
+  color: #f2f7ff;
+}
+
+.copied-anim {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  line-height: 24px;
+  animation: popIn 120ms ease-out forwards;
+}
+
+.copied-anim svg {
+  width: 16px; height: 16px;
+  stroke: currentColor; fill: none; stroke-width: 3;
+  stroke-linecap: round; stroke-linejoin: round;
+  stroke-dasharray: 22;
+  stroke-dashoffset: 22;
+  animation: drawCheck 500ms ease forwards 60ms;
+}
+
+@keyframes popIn {
+  from { transform: scale(.96); opacity: .0; }
+  to   { transform: scale(1);   opacity: 1;  }
+}
+
+@keyframes drawCheck {
+  to { stroke-dashoffset: 0; }
+}
+
+.signature-base {
+  position: relative; /* nécessaire pour positionner le badge */
+}
+
+.site-badge {
+  position: absolute;
+  bottom: 12px;   /* marge avec le bas */
+  left: 12px;     /* marge avec le bord gauche */
+  height: 32px;   /* ajuste selon ton badge */
+  pointer-events: none; /* évite de cliquer dessus */
+  opacity: 0.9;   /* optionnel : un petit effet */
+}
+

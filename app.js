@@ -74,7 +74,7 @@ const btns = {
   reset: byId('reset'),
 };
 
-/* si ton HTML utilise onclick="avatarFile.click()" */
+/* Expose pour les onclick HTML */
 window.avatarFile = inputs.avatarFile;
 window.bannerFile = inputs.bannerFile;
 
@@ -122,20 +122,36 @@ async function copyHtmlToClipboard(html, plainTextFallback = '') {
   }
   await navigator.clipboard.writeText(plainTextFallback || html);
 }
+
+/* ===== Animation "Copied" fiable ===== */
 function showCopied(btn, label = 'Copied') {
+  // Stocke le label initial si besoin
   if (!btn.dataset.label) btn.dataset.label = btn.textContent.trim();
+
+  // Figer la largeur pour éviter le "jump" pendant l'animation
+  const styles = getComputedStyle(btn);
+  btn.style.width = styles.width;
+
+  // Désactiver et styliser
   btn.disabled = true;
-  btn.classList.add('copied');
+  btn.classList.add('is-copied');
+
+  // Contenu animé avec check SVG (stroke animé)
   btn.innerHTML = `
     <span class="copied-anim" aria-hidden="true">
-      <svg viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></svg>
-      ${label}
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M5 13l4 4L19 7"></path>
+      </svg>
+      <span>${label}</span>
     </span>
   `;
-  setTimeout(() => {
-    btn.classList.remove('copied');
+
+  // Restauration
+  window.setTimeout(() => {
+    btn.classList.remove('is-copied');
     btn.disabled = false;
-    btn.innerHTML = btn.dataset.label;
+    btn.textContent = btn.dataset.label;
+    requestAnimationFrame(() => { btn.style.width = ''; });
   }, 1200);
 }
 
@@ -307,7 +323,7 @@ function renderPreview() {
   card.style.transformOrigin = 'top left';
 
   requestAnimationFrame(() => {
-    const wrapRect = $('#previewInner').getBoundingClientRect();
+    const wrapRect = byId('previewInner').getBoundingClientRect();
     const cardRect = card.getBoundingClientRect();
     const scale = Math.min(
       BASE_PREVIEW_SCALE,
@@ -366,7 +382,7 @@ btns.reset.addEventListener('click', () => {
 
 /* ===== Init ===== */
 window.addEventListener('load', () => {
-  // Si tu veux forcer les placeholders générés (sans fichiers), dé-commente :
+  // Si tu veux forcer les placeholders générés :
   // LOGO_SRC = LOGO_FALLBACK;
   // ICON_LINKEDIN_SRC = LINKEDIN_FALLBACK;
   // ICON_LEMCAL_SRC = LEMCAL_FALLBACK;

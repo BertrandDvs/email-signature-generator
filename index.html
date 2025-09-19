@@ -11,7 +11,7 @@
   <header class="app-header">
     <h1>Email Signature Generator</h1>
     <div class="actions">
-      <button class="btnprim" id="copyGmail">Copy for Gmail </button>
+      <button class="btnprim" id="copyGmail">Copy for Gmail</button>
       <button class="btn ghost" id="openGmail" title="Open Gmail Settings">Open Gmail</button>
       <button class="btn" id="reset">Reset</button>
     </div>
@@ -63,7 +63,7 @@
                   <span class="slider"></span>
                 </label>
               </div>
-              <input type="url" id="linkedin" value='https://www.linkedin.com/in/bertrand-deveseleer-15866213a/' placeholder="Your LinkedIn Link" />
+              <input type="url" id="linkedin" value="https://www.linkedin.com/in/bertrand-deveseleer-15866213a/" placeholder="Your LinkedIn Link" />
             </div>
 
             <div class="social-item">
@@ -99,6 +99,18 @@
       </form>
     </aside>
   </main>
+
+  <section class="panel preview">
+  <div class="preview-inner" id="previewInner">
+    <div class="signature-base" id="signatureBase">
+      <div class="preview-card" id="previewCard">
+        <div id="signaturePreview"></div>
+      </div>
+      <!-- Badge décoratif (uniquement sur le site) -->
+      <img src="icons/badge.png" alt="Badge" class="site-badge" />
+    </div>
+  </div>
+</section>
 
   <script src="app.js"></script>
 </body>
