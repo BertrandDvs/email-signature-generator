@@ -2,56 +2,82 @@
 const BASE_PREVIEW_SCALE = 0.92;
 const PREVIEW_MAX_WIDTH = 500;
 
-/* ===== Colors ===== */
-const COLOR_SEPARATOR = '#E6E6E6';
-const COLOR_NAME = '#213856';
-const COLOR_ROLE = '#566F8F';
-const COLOR_SITE = '#98A1AC';
-const COLOR_TEXT = '#17161B';
-const COLOR_MUTED = '#566F8F';
-const COLOR_ACCENT = '#316BFF';
-
-/* ===== Sizes ===== */
-const PHOTO_SIZE = 89;
-const ICON_SIZE = 40;
-
-/* ===== Fixed content ===== */
-const WEBSITE_FIXED = 'www.lemlist.com';
-
 /* ============================================================================
-   PUBLIC ASSETS (GitHub Pages) — pour l'export Gmail
+   Brand profiles (couleurs, site, assets)
+   Ajoute tes fichiers Taplio dans /icons/ (noms ci-dessous à adapter si besoin)
    ========================================================================== */
-const PUBLIC_ASSET_BASE = 'https://bertranddvs.github.io/email-signature-generator/icons/';
-const PUBLIC_ASSETS = {
-  logo:    PUBLIC_ASSET_BASE + 'logo.gif',
-  linkedin:PUBLIC_ASSET_BASE + 'linkedin.png',
-  lemcal:  PUBLIC_ASSET_BASE + 'lemcal.png',
-  avatar:  PUBLIC_ASSET_BASE + 'avatar-placeholder.png',
-  banner:  PUBLIC_ASSET_BASE + 'banner-placeholder.png',
+const BRAND_PROFILES = {
+  lemlist: {
+    key: 'lemlist',
+    site: 'www.lemlist.com',
+    colors: {
+      separator:'#E6E6E6', name:'#213856', role:'#566F8F',
+      site:'#98A1AC', text:'#17161B', muted:'#566F8F', accent:'#316BFF'
+    },
+    gradient: ['#316BFF','#134CDD'],
+    assets: {
+      // locaux (preview) :
+      logoLocal:   'icons/logo.gif',
+      avatarLocal: 'icons/avatar-placeholder.png',
+      bannerLocal: 'icons/banner-placeholder.png',
+      // publics (GitHub Pages) :
+      logoPublic:   'logo.gif',
+      avatarPublic: 'avatar-placeholder.png',
+      bannerPublic: 'banner-placeholder.png',
+      // icônes sociaux (communs ici)
+      linkedinPublic: 'linkedin.png',
+      lemcalPublic:   'lemcal.png'
+    }
+  },
+  taplio: {
+    key: 'taplio',
+    site: 'taplio.com',
+    colors: {
+      separator:'#E6E6E6', name:'#1A1333', role:'#6F6B80',
+      site:'#9BA0AC', text:'#14121A', muted:'#6F6B80', accent:'#7C4DFF'
+    },
+    gradient: ['#7C4DFF','#5A31D4'],
+    assets: {
+      // ⚠️ Ajoute ces fichiers (ou renomme ici selon tes noms réels)
+      logoLocal:   'icons/taplio-logo.png',
+      avatarLocal: 'icons/taplio-avatar.png',
+      bannerLocal: 'icons/taplio-banner.png',
+      logoPublic:   'taplio-logo.png',
+      avatarPublic: 'taplio-avatar.png',
+      bannerPublic: 'taplio-banner.png',
+      // sociaux (on garde les mêmes par défaut)
+      linkedinPublic: 'linkedin.png',
+      lemcalPublic:   'lemcal.png'
+    }
+  }
 };
+
+/* ===== Public assets base (GitHub Pages) ===== */
+const PUBLIC_ASSET_BASE = 'https://bertranddvs.github.io/email-signature-generator/icons/';
+
+/* ===== State brand/theme (mutable) ===== */
+let CURRENT_BRAND = BRAND_PROFILES.lemlist; // défaut
+let THEME = { colors: CURRENT_BRAND.colors, site: CURRENT_BRAND.site };
+let PUBLIC_ASSETS_CURRENT = mapPublicAssets(CURRENT_BRAND);
+
+/* ===== Colors (fallbacks SVG) ===== */
+const LINKEDIN_FALLBACK = rectSVG(40, 40, '#0A66C2', 'in');
+const LEMCAL_FALLBACK   = rectSVG(40, 40, '#316BFF', 'cal'); // juste un fallback neutre
+const PLACEHOLDER_AVATAR = rectSVG(89, 89, '#E9EEF2', 'Photo');
+const PLACEHOLDER_BANNER = rectSVG(600, 120, '#DDEEE8', 'Banner');
 
 /* ===== Local assets (preview / app) ===== */
 const ASSETS = {
-  logo: 'icons/logo.gif',
   linkedin: 'icons/linkedin.png',
-  lemcal: 'icons/lemcal.png',
-  avatarPlaceholder: 'icons/avatar-placeholder.png',
-  bannerPlaceholder: 'icons/banner-placeholder.png',
+  lemcal:   'icons/lemcal.png'
 };
 
-/* ===== Image sources (no web fetch) ===== */
-let LOGO_SRC           = ASSETS.logo;
+/* ===== Image sources (no web fetch) — seront remplacées via applyBrand() ===== */
+let LOGO_SRC           = CURRENT_BRAND.assets.logoLocal;
 let ICON_LINKEDIN_SRC  = ASSETS.linkedin;
 let ICON_LEMCAL_SRC    = ASSETS.lemcal;
-let AVATAR_DEFAULT_SRC = ASSETS.avatarPlaceholder;
-let BANNER_DEFAULT_SRC = ASSETS.bannerPlaceholder;
-
-/* ===== Fallbacks (SVG data URIs if local files are absent) ===== */
-const LOGO_FALLBACK        = rectSVG(100, 28, COLOR_ACCENT, 'lemlist');
-const LINKEDIN_FALLBACK    = rectSVG(ICON_SIZE, ICON_SIZE, '#0A66C2', 'in');
-const LEMCAL_FALLBACK      = rectSVG(ICON_SIZE, ICON_SIZE, '#316BFF', 'cal');
-const PLACEHOLDER_AVATAR   = rectSVG(PHOTO_SIZE, PHOTO_SIZE, '#E9EEF2', 'Photo');
-const PLACEHOLDER_BANNER   = rectSVG(600, 120, '#DDEEE8', 'Banner');
+let AVATAR_DEFAULT_SRC = CURRENT_BRAND.assets.avatarLocal;
+let BANNER_DEFAULT_SRC = CURRENT_BRAND.assets.bannerLocal;
 
 /* ===== DOM ===== */
 const $ = (sel) => document.querySelector(sel);
@@ -135,7 +161,7 @@ async function copyHtmlToClipboard(html, plainTextFallback = '') {
   await navigator.clipboard.writeText(plainTextFallback || html);
 }
 
-/* ===== Animation "Copied" fiable ===== */
+/* ===== Copied anim ===== */
 function showCopied(btn, label = 'Copied') {
   if (!btn.dataset.label) btn.dataset.label = btn.textContent.trim();
   const styles = getComputedStyle(btn);
@@ -144,18 +170,34 @@ function showCopied(btn, label = 'Copied') {
   btn.classList.add('is-copied');
   btn.innerHTML = `
     <span class="copied-anim" aria-hidden="true">
-      <svg viewBox="0 0 24 24" aria-hidden="true">
-        <path d="M5 13l4 4L19 7"></path>
-      </svg>
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 13l4 4L19 7"></path></svg>
       <span>${label}</span>
-    </span>
-  `;
+    </span>`;
   window.setTimeout(() => {
     btn.classList.remove('is-copied');
     btn.disabled = false;
     btn.textContent = btn.dataset.label;
     requestAnimationFrame(() => { btn.style.width = ''; });
   }, 1200);
+}
+
+/* ===== Public assets mapping ===== */
+function mapPublicAssets(profile){
+  return {
+    logo:     PUBLIC_ASSET_BASE + profile.assets.logoPublic,
+    avatar:   PUBLIC_ASSET_BASE + profile.assets.avatarPublic,
+    banner:   PUBLIC_ASSET_BASE + profile.assets.bannerPublic,
+    linkedin: PUBLIC_ASSET_BASE + profile.assets.linkedinPublic,
+    lemcal:   PUBLIC_ASSET_BASE + profile.assets.lemcalPublic
+  };
+}
+
+/* ===== Sanitize src for export (force HTTPS public GitHub Pages) ===== */
+function sanitizeSrcForEmail(src, kind) {
+  if (src && /^https:\/\//i.test(src)) return src;           // déjà https
+  if (kind && PUBLIC_ASSETS_CURRENT[kind]) return PUBLIC_ASSETS_CURRENT[kind];
+  const file = String(src || '').split('/').pop();
+  return PUBLIC_ASSET_BASE + file;
 }
 
 /* ===== State ===== */
@@ -180,12 +222,12 @@ function collectState() {
     linkedin, linkedinEnabled,
     lemcal, lemcalEnabled,
     avatar: imageCache.avatar,
-    logo: LOGO_SRC || LOGO_FALLBACK,
+    logo: LOGO_SRC || rectSVG(100, 28, THEME.colors.accent, CURRENT_BRAND.key),
     banner: imageCache.banner,
   };
 }
 
-/* ===== Email HTML ===== */
+/* ===== Email HTML (utilise THEME dynamique) ===== */
 function buildEmailHTML(state, { align = 'center' } = {}) {
   const {
     name, role, email, phone,
@@ -194,18 +236,21 @@ function buildEmailHTML(state, { align = 'center' } = {}) {
     avatar, logo, banner
   } = state;
 
+  const C = THEME.colors;
+  const SITE = THEME.site;
+
   const linkedinCell = linkedinEnabled ? `
     <a href="${escapeHtml(linkedin)}" style="display:inline-block; text-decoration:none; line-height:0;">
-      <img src="${ICON_LINKEDIN_SRC || LINKEDIN_FALLBACK}" width="${ICON_SIZE}" height="${ICON_SIZE}" alt="LinkedIn" style="display:block; border:0; outline:none; text-decoration:none;">
+      <img src="${ICON_LINKEDIN_SRC || LINKEDIN_FALLBACK}" width="40" height="40" alt="LinkedIn" style="display:block; border:0; outline:none; text-decoration:none;">
     </a>` : '';
 
   const lemcalCell = lemcalEnabled ? `
     <a href="${escapeHtml(lemcal)}" style="display:inline-block; text-decoration:none; line-height:0;">
-      <img src="${ICON_LEMCAL_SRC || LEMCAL_FALLBACK}" width="${ICON_SIZE}" height="${ICON_SIZE}" alt="Lemcal" style="display:block; border:0; outline:none; text-decoration:none;">
+      <img src="${ICON_LEMCAL_SRC || LEMCAL_FALLBACK}" width="40" height="40" alt="Lemcal" style="display:block; border:0; outline:none; text-decoration:none;">
     </a>` : '';
 
-  const phoneRow = phone ? `<tr><td style="padding:0;"><a href="${toTelHref(phone)}" style="color:${COLOR_MUTED}; text-decoration:none;">${escapeHtml(phone)}</a></td></tr>` : '';
-  const emailRow = email ? `<tr><td style="padding:0;"><a href="mailto:${escapeHtml(email)}" style="color:${COLOR_MUTED}; text-decoration:none;">${escapeHtml(email)}</a></td></tr>` : '';
+  const phoneRow = phone ? `<tr><td style="padding:0;"><a href="${toTelHref(phone)}" style="color:${C.muted}; text-decoration:none;">${escapeHtml(phone)}</a></td></tr>` : '';
+  const emailRow = email ? `<tr><td style="padding:0;"><a href="mailto:${escapeHtml(email)}" style="color:${C.muted}; text-decoration:none;">${escapeHtml(email)}</a></td></tr>` : '';
 
   const rightIcons = (linkedinEnabled || lemcalEnabled) ? `
     <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="white-space:nowrap; font-size:0; line-height:0;">
@@ -225,18 +270,18 @@ function buildEmailHTML(state, { align = 'center' } = {}) {
           <tbody>
             <tr>
               <td valign="top" style="vertical-align:top; font-size:16px;">
-                <div style="font-size:18px; font-weight:800; color:${COLOR_NAME}; line-height:1.2;">${escapeHtml(name)}</div>
-                <div style="font-size:14px; color:${COLOR_ROLE}; line-height:1.5;">${escapeHtml(role)}</div>
+                <div style="font-size:18px; font-weight:800; color:${C.name}; line-height:1.2;">${escapeHtml(name)}</div>
+                <div style="font-size:14px; color:${C.role}; line-height:1.5;">${escapeHtml(role)}</div>
               </td>
               <td valign="top" align="right" style="text-align:right; white-space:nowrap;">
-                <a href="https://${WEBSITE_FIXED}" target="_blank" style="text-decoration:none; display:inline-block;">
+                <a href="https://${SITE}" target="_blank" style="text-decoration:none; display:inline-block;">
                   <img src="${logo}" alt="Logo" style="display:block; height:28px; border:0; outline:none; text-decoration:none;" />
                 </a>
               </td>
             </tr>
             <tr>
               <td colspan="2" style="padding-top:12px;">
-                <div style="height:2px; background:${COLOR_SEPARATOR};"></div>
+                <div style="height:2px; background:${C.separator};"></div>
               </td>
             </tr>
           </tbody>
@@ -255,15 +300,15 @@ function buildEmailHTML(state, { align = 'center' } = {}) {
                   <tbody>
                     <tr>
                       <td valign="middle">
-                        <img src="${avatar}" width="${PHOTO_SIZE}" height="${PHOTO_SIZE}" alt="${escapeHtml(name)}" style="display:block; border-radius:6px;" />
+                        <img src="${avatar}" width="89" height="89" alt="${escapeHtml(name)}" style="display:block; border-radius:6px;" />
                       </td>
                       <td style="width:16px;"></td>
                       <td valign="middle">
-                        <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="font-size:13px; color:${COLOR_MUTED}; line-height:1.7;">
+                        <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="font-size:13px; color:${C.muted}; line-height:1.7;">
                           <tbody>
                             ${phoneRow}
                             ${emailRow}
-                            <tr><td><a href="https://${WEBSITE_FIXED}" style="color:${COLOR_SITE}; text-decoration:none;">${WEBSITE_FIXED}</a></td></tr>
+                            <tr><td><a href="https://${SITE}" style="color:${C.site}; text-decoration:none;">${SITE}</a></td></tr>
                           </tbody>
                         </table>
                       </td>
@@ -297,7 +342,7 @@ function buildEmailHTML(state, { align = 'center' } = {}) {
       <!--[if mso]><table role="presentation" cellpadding="0" cellspacing="0" border="0" width="${PREVIEW_MAX_WIDTH}"><tr><td><![endif]-->
       <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="left"
              style="border-collapse:collapse; mso-table-lspace:0pt; mso-table-rspace:0pt;
-                    color:${COLOR_TEXT}; font-family:Arial,Helvetica,sans-serif;
+                    color:${C.text}; font-family:Arial,Helvetica,sans-serif;
                     width:100%; max-width:${PREVIEW_MAX_WIDTH}px;">
         <tbody>${contentRows}</tbody>
       </table>
@@ -310,26 +355,13 @@ function buildEmailHTML(state, { align = 'center' } = {}) {
   return `
 <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center"
        style="border-collapse:collapse; mso-table-lspace:0pt; mso-table-rspace:0pt;
-              color:${COLOR_TEXT}; font-family:Arial,Helvetica,sans-serif;
+              color:${C.text}; font-family:Arial,Helvetica,sans-serif;
               max-width:${PREVIEW_MAX_WIDTH}px; width:100%;">
   <tbody>${contentRows}</tbody>
 </table>`.trim();
 }
 
-/* ============================================================================
-   Sanitize des sources pour l’export (force HTTPS public GitHub Pages)
-   ========================================================================== */
-function sanitizeSrcForEmail(src, kind) {
-  if (!src) return PUBLIC_ASSETS[kind] || '';
-  if (/^https:\/\//i.test(src)) return src;                 // déjà OK
-  if (/^data:/i.test(src)) return PUBLIC_ASSETS[kind] || ''; // remplace base64
-  if (!/^https?:\/\//i.test(src)) {                         // chemin relatif → absolu
-    return PUBLIC_ASSET_BASE + src.replace(/^(\.\/)?/, '');
-  }
-  return src;
-}
-
-/* Variante de rendu pour l’export (sans toucher à la preview) */
+/* ===== Variante export (force URLs publiques) ===== */
 function buildEmailHTMLForExport(state, opts) {
   const safeState = {
     ...state,
@@ -338,19 +370,14 @@ function buildEmailHTMLForExport(state, opts) {
     banner: sanitizeSrcForEmail(state.banner, 'banner'),
   };
 
-  // Sauvegarde, puis force des URLs publiques pour les icônes
   const _iconLinkedin = ICON_LINKEDIN_SRC;
   const _iconLemcal   = ICON_LEMCAL_SRC;
 
-  const prevLinkedin = ICON_LINKEDIN_SRC || LINKEDIN_FALLBACK;
-  const prevLemcal   = ICON_LEMCAL_SRC   || LEMCAL_FALLBACK;
-
-  ICON_LINKEDIN_SRC = sanitizeSrcForEmail(prevLinkedin, 'linkedin');
-  ICON_LEMCAL_SRC   = sanitizeSrcForEmail(prevLemcal,   'lemcal');
+  ICON_LINKEDIN_SRC = sanitizeSrcForEmail(ICON_LINKEDIN_SRC || LINKEDIN_FALLBACK, 'linkedin');
+  ICON_LEMCAL_SRC   = sanitizeSrcForEmail(ICON_LEMCAL_SRC   || LEMCAL_FALLBACK,   'lemcal');
 
   const html = buildEmailHTML(safeState, opts);
 
-  // Restaure les valeurs preview
   ICON_LINKEDIN_SRC = _iconLinkedin;
   ICON_LEMCAL_SRC   = _iconLemcal;
 
@@ -378,6 +405,46 @@ function renderPreview() {
   });
 }
 
+/* ===== Brand switching ===== */
+function applyBrand(key){
+  const prof = BRAND_PROFILES[key] || BRAND_PROFILES.lemlist;
+  CURRENT_BRAND = prof;
+  THEME = { colors: prof.colors, site: prof.site };
+  PUBLIC_ASSETS_CURRENT = mapPublicAssets(prof);
+
+  // Set CSS variables (accent + gradient)
+  document.documentElement.style.setProperty('--accent', prof.colors.accent);
+  document.documentElement.style.setProperty('--grad-start', prof.gradient[0]);
+  document.documentElement.style.setProperty('--grad-end',   prof.gradient[1]);
+
+  // Set local defaults
+  LOGO_SRC           = prof.assets.logoLocal;
+  AVATAR_DEFAULT_SRC = prof.assets.avatarLocal;
+  BANNER_DEFAULT_SRC = prof.assets.bannerLocal;
+
+  // Reset uploads to defaults (cohérence brand)
+  inputs.avatarFile.value = '';
+  inputs.bannerFile.value = '';
+  imageCache.avatar = AVATAR_DEFAULT_SRC || PLACEHOLDER_AVATAR;
+  imageCache.banner = BANNER_DEFAULT_SRC || PLACEHOLDER_BANNER;
+  fileBtns.avatar.textContent = 'Upload photo';
+  fileBtns.banner.textContent = 'Upload banner';
+  fileBtns.avatar.classList.remove('used');
+  fileBtns.banner.classList.remove('used');
+
+  // Toggle UI state
+  const btnL = byId('brandLemlist');
+  const btnT = byId('brandTaplio');
+  if (btnL && btnT){
+    btnL.classList.toggle('is-active', key === 'lemlist');
+    btnT.classList.toggle('is-active', key === 'taplio');
+    btnL.setAttribute('aria-selected', key === 'lemlist' ? 'true':'false');
+    btnT.setAttribute('aria-selected', key === 'taplio' ? 'true':'false');
+  }
+
+  renderPreview();
+}
+
 /* ===== File inputs ===== */
 inputs.avatarFile.addEventListener('change', async (e) => {
   const f = e.target.files?.[0];
@@ -402,12 +469,11 @@ inputs.bannerFile.addEventListener('change', async (e) => {
 
 /* ===== Buttons ===== */
 btns.copyGmail.addEventListener('click', async () => {
-  // Export aligné gauche + sanitation des images pour Gmail
   const htmlExport = buildEmailHTMLForExport(collectState(), { align: 'left' });
   const html = wrapForGmail(htmlExport);
   try { await copyHtmlToClipboard(html, ''); }
   catch { await navigator.clipboard.writeText(html); }
-  finally { showCopied(btns.copyGmail); } // ✓ Copied
+  finally { showCopied(btns.copyGmail); }
 });
 
 btns.openGmail.addEventListener('click', () => {
@@ -428,18 +494,16 @@ btns.reset.addEventListener('click', () => {
 
 /* ===== Init ===== */
 window.addEventListener('load', () => {
-  // Si tu veux forcer les placeholders générés :
-  // LOGO_SRC = LOGO_FALLBACK;
-  // ICON_LINKEDIN_SRC = LINKEDIN_FALLBACK;
-  // ICON_LEMCAL_SRC = LEMCAL_FALLBACK;
-  // AVATAR_DEFAULT_SRC = PLACEHOLDER_AVATAR;
-  // BANNER_DEFAULT_SRC = PLACEHOLDER_BANNER;
+  // Initial brand (lemlist)
+  applyBrand('lemlist');
 
-  imageCache.avatar = AVATAR_DEFAULT_SRC || PLACEHOLDER_AVATAR;
-  imageCache.banner = BANNER_DEFAULT_SRC || PLACEHOLDER_BANNER;
-  fileBtns.avatar.textContent = 'Upload photo';
-  fileBtns.banner.textContent = 'Upload banner';
+  // Wire brand toggle
+  document.querySelectorAll('.brand-switch .seg').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      const k = e.currentTarget.dataset.brand;
+      applyBrand(k);
+    });
+  });
 
-  renderPreview();
   window.addEventListener('resize', renderPreview);
 });

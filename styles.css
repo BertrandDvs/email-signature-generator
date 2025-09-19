@@ -249,3 +249,40 @@ input[type="text"], input[type="email"], input[type="url"], input[type="tel"], i
   pointer-events: none; /* évite de cliquer dessus */
   opacity: 1;   /* optionnel : un petit effet */
 }
+
+:root{
+  --bg:#ffffff;
+  --panel:#FBFBFB;
+  --text:#17161B;
+  --muted:#5B6B7D;
+  --border:#E6E6E6;
+  --accent:#316bff;            /* défaut lemlist */
+  --grad-start:#316BFF;        /* défaut lemlist */
+  --grad-end:#134CDD;          /* défaut lemlist */
+}
+
+/* Toggle de marque dans le header */
+.brand-switch{
+  display:flex; gap:8px; align-items:center;
+  background:#fff; border:1px solid var(--border);
+  border-radius:14px; padding:4px;
+}
+.brand-switch .seg{
+  appearance:none; border:0; background:#ffffff; cursor:pointer;
+  width:44px; height:36px; border-radius:10px; display:grid; place-items:center;
+  transition: box-shadow .2s ease, background .2s ease, transform .08s ease;
+}
+.brand-switch .seg img{ display:block; width:24px; height:24px; }
+.brand-switch .seg:is(:hover,:focus-visible){ outline:none; box-shadow:0 0 0 2px rgba(49,107,255,.22) inset; }
+.brand-switch .seg.is-active{
+  background:#F7FAFF;
+  box-shadow: 0 0 0 2px rgba(49,107,255,.75) inset, 0 1px 4px rgba(0,0,0,.05);
+}
+
+/* Preview => gradient piloté par variables */
+.preview{
+ 
+  border-color: transparent;
+  min-height: 520px;
+  padding:0;
+}
