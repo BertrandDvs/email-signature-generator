@@ -20,7 +20,7 @@ const WEBSITE_FIXED = 'www.lemlist.com';
 
 /* ===== Local assets (change paths if needed) ===== */
 const ASSETS = {
-  logo: 'icons/logo.png',
+  logo: 'icons/logo.gif',
   linkedin: 'icons/linkedin.png',
   lemcal: 'icons/lemcal.png',
   avatarPlaceholder: 'icons/avatar-placeholder.png',
