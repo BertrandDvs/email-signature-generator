@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <title>Email Signature Generator — lemlist</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/png" href="icons/favicon.png" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="app-header">
+    <h1>Email Signature Generator</h1>
+    <div class="actions">
+      <button class="btn" id="copyGmail">Copy for Gmail</button>
+      <button class="btn ghost" id="openGmail" title="Open Gmail Settings">Open Gmail</button>
+      <button class="btn" id="reset">Reset</button>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <!-- Preview -->
+    <section class="panel preview">
+      <div class="preview-inner" id="previewInner">
+        <div class="signature-base" id="signatureBase">
+          <div class="preview-card" id="previewCard">
+            <div id="signaturePreview"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Form -->
+    <aside class="panel form">
+      <form class="form-scrollguard" onsubmit="return false;">
+        <div class="grid-1">
+          <div class="row">
+            <label for="name">Full Name</label>
+            <input type="text" id="name" value="John Doe" />
+          </div>
+
+          <div class="row">
+            <label for="role">Job Title</label>
+            <input type="text" id="role" value="Sales & Marketing Director" />
+          </div>
+
+          <div class="row">
+            <label for="email">Email</label>
+            <input type="email" id="email" value="john.doe@lemlist.com" />
+          </div>
+
+          <div class="row">
+            <label for="phone">Phone</label>
+            <input type="tel" id="phone" value="(800) 555-0199" />
+          </div>
+
+          <!-- Réseaux avec vrais toggles au-dessus -->
+          <div class="row social-row">
+            <div class="social-item">
+              <div class="social-head">
+                <label for="linkedin">LinkedIn</label>
+                <label class="switch">
+                  <input type="checkbox" id="linkedinToggle" checked />
+                  <span class="slider"></span>
+                </label>
+              </div>
+              <input type="url" id="linkedin" value="https://www.linkedin.com/in/johndoe" placeholder="https://www.linkedin.com/in/..." />
+            </div>
+
+            <div class="social-item">
+              <div class="social-head">
+                <label for="lemcal">lemcal</label>
+                <label class="switch">
+                  <input type="checkbox" id="lemcalToggle" checked />
+                  <span class="slider"></span>
+                </label>
+              </div>
+              <input type="url" id="lemcal" value="" placeholder="https://lemcal.com/..." />
+            </div>
+          </div>
+
+          <!-- Uploads sur UNE ligne (bouton = nom du fichier si sélectionné) -->
+          <div class="row grid-2">
+            <div>
+              <label>Photo</label>
+              <div class="file-input">
+                <input type="file" id="avatarFile" accept="image/*" />
+                <button type="button" class="btn file-btn" id="avatarBtn" onclick="avatarFile.click()">Upload photo</button>
+              </div>
+            </div>
+            <div>
+              <label>Banner</label>
+              <div class="file-input">
+                <input type="file" id="bannerFile" accept="image/*" />
+                <button type="button" class="btn file-btn" id="bannerBtn" onclick="bannerFile.click()">Upload banner</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </form>
+    </aside>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
