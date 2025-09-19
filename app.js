@@ -394,6 +394,8 @@ btns.copyGmail.addEventListener('click', async () => {
   }
 });
 
+
+
 btns.openGmail.addEventListener('click', () => {
   window.open('https://mail.google.com/mail/u/0/#settings/general', '_blank');
 });

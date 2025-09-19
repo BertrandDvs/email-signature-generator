@@ -11,7 +11,7 @@
   <header class="app-header">
     <h1>Email Signature Generator</h1>
     <div class="actions">
-      <button class="btn" id="copyGmail">Copy for Gmail</button>
+      <button class="btnprim" id="copyGmail">Copy for Gmail </button>
       <button class="btn ghost" id="openGmail" title="Open Gmail Settings">Open Gmail</button>
       <button class="btn" id="reset">Reset</button>
     </div>
@@ -35,22 +35,22 @@
         <div class="grid-1">
           <div class="row">
             <label for="name">Full Name</label>
-            <input type="text" id="name" value="John Doe" />
+            <input type="text" id="name" value="Bertrand Deveseleer" />
           </div>
 
           <div class="row">
             <label for="role">Job Title</label>
-            <input type="text" id="role" value="Sales & Marketing Director" />
+            <input type="text" id="role" value="Brand Designer" placeholder="Your job title"/>
           </div>
 
           <div class="row">
             <label for="email">Email</label>
-            <input type="email" id="email" value="john.doe@lemlist.com" />
+            <input type="email" id="email" value="bertrand@lemlist.com" placeholder="mail@lemlist.com" />
           </div>
 
           <div class="row">
             <label for="phone">Phone</label>
-            <input type="tel" id="phone" value="(800) 555-0199" />
+            <input type="tel" id="phone" value="+33 6 66 66 66 66" placeholder="+33 6 66 66 66 66" />
           </div>
 
           <!-- Réseaux avec vrais toggles au-dessus -->
@@ -63,7 +63,7 @@
                   <span class="slider"></span>
                 </label>
               </div>
-              <input type="url" id="linkedin" value="https://www.linkedin.com/in/johndoe" placeholder="https://www.linkedin.com/in/..." />
+              <input type="url" id="linkedin" placeholder="Your LinkedIn Link" />
             </div>
 
             <div class="social-item">
@@ -74,7 +74,7 @@
                   <span class="slider"></span>
                 </label>
               </div>
-              <input type="url" id="lemcal" value="" placeholder="https://lemcal.com/..." />
+              <input type="url" id="lemcal" value="" placeholder="Your lemcal Link" />
             </div>
           </div>
 
