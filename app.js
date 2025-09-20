@@ -4,7 +4,6 @@ const PREVIEW_MAX_WIDTH = 500;
 
 /* ============================================================================
    Brand profiles (couleurs, site, assets)
-   Ajoute tes fichiers Taplio dans /icons/ (noms ci-dessous à adapter si besoin)
    ========================================================================== */
 const BRAND_PROFILES = {
   lemlist: {
@@ -38,14 +37,12 @@ const BRAND_PROFILES = {
     },
     gradient: ['#2C58B6','#204698ff'],
     assets: {
-      // ⚠️ Ajoute ces fichiers (ou renomme ici selon tes noms réels)
       logoLocal:   'icons/taplio-logo.png',
       avatarLocal: 'icons/taplio-avatar.png',
       bannerLocal: 'icons/taplio-banner.png',
       logoPublic:   'taplio-logo.png',
       avatarPublic: 'taplio-avatar.png',
       bannerPublic: 'taplio-banner.png',
-      // sociaux (on garde les mêmes par défaut)
       linkedinPublic: 'linkedin.png',
       lemcalPublic:   'lemcal.png'
     }
@@ -62,7 +59,7 @@ let PUBLIC_ASSETS_CURRENT = mapPublicAssets(CURRENT_BRAND);
 
 /* ===== Colors (fallbacks SVG) ===== */
 const LINKEDIN_FALLBACK = rectSVG(40, 40, '#0A66C2', 'in');
-const LEMCAL_FALLBACK   = rectSVG(40, 40, '#316BFF', 'cal'); // juste un fallback neutre
+const LEMCAL_FALLBACK   = rectSVG(40, 40, '#316BFF', 'cal'); // fallback neutre
 const PLACEHOLDER_AVATAR = rectSVG(89, 89, '#E9EEF2', 'Photo');
 const PLACEHOLDER_BANNER = rectSVG(600, 120, '#DDEEE8', 'Banner');
 
@@ -94,6 +91,7 @@ const inputs = {
   lemcalToggle: byId('lemcalToggle'),
   avatarFile: byId('avatarFile'),
   bannerFile: byId('bannerFile'),
+  bannerToggle: byId('bannerToggle'), // ← nouveau
 };
 
 const fileBtns = {
@@ -217,6 +215,8 @@ function collectState() {
   const lemcal = inputs.lemcal.value.trim();
   const lemcalEnabled = !!inputs.lemcalToggle.checked && !!lemcal;
 
+  const bannerEnabled = !!(inputs.bannerToggle ? inputs.bannerToggle.checked : true);
+
   return {
     name, role, email, phone,
     linkedin, linkedinEnabled,
@@ -224,6 +224,7 @@ function collectState() {
     avatar: imageCache.avatar,
     logo: LOGO_SRC || rectSVG(100, 28, THEME.colors.accent, CURRENT_BRAND.key),
     banner: imageCache.banner,
+    bannerEnabled,
   };
 }
 
@@ -233,7 +234,7 @@ function buildEmailHTML(state, { align = 'center' } = {}) {
     name, role, email, phone,
     linkedin, linkedinEnabled,
     lemcal, lemcalEnabled,
-    avatar, logo, banner
+    avatar, logo, banner, bannerEnabled
   } = state;
 
   const C = THEME.colors;
@@ -262,6 +263,14 @@ function buildEmailHTML(state, { align = 'center' } = {}) {
       </tbody>
     </table>` : '';
 
+  const bannerBlock = bannerEnabled ? `
+    <tr><td style="height:16px;"></td></tr>
+    <tr>
+      <td align="${align === 'left' ? 'left' : 'center'}">
+        <img src="${banner}" alt="Banner" style="display:block; width:100%; max-width:${PREVIEW_MAX_WIDTH}px; height:auto; border-radius:8px;" />
+      </td>
+    </tr>` : '';
+
   const contentRows = `
     <!-- HEADER -->
     <tr>
@@ -281,7 +290,7 @@ function buildEmailHTML(state, { align = 'center' } = {}) {
             </tr>
             <tr>
               <td colspan="2" style="padding-top:12px;">
-                <div style="height:2px; background:${C.separator};"></div>
+                <div style="height:1px; background:${C.separator};"></div>
               </td>
             </tr>
           </tbody>
@@ -325,13 +334,7 @@ function buildEmailHTML(state, { align = 'center' } = {}) {
       </td>
     </tr>
 
-    <!-- BANNER -->
-    <tr><td style="height:16px;"></td></tr>
-    <tr>
-      <td align="${align === 'left' ? 'left' : 'center'}">
-        <img src="${banner}" alt="Banner" style="display:block; width:100%; max-width:${PREVIEW_MAX_WIDTH}px; height:auto; border-radius:8px;" />
-      </td>
-    </tr>
+    ${bannerBlock}
   `;
 
   if (align === 'left') {
@@ -422,7 +425,7 @@ function applyBrand(key){
   AVATAR_DEFAULT_SRC = prof.assets.avatarLocal;
   BANNER_DEFAULT_SRC = prof.assets.bannerLocal;
 
-  // Reset uploads to defaults (cohérence brand)
+  // Reset uploads à la brand
   inputs.avatarFile.value = '';
   inputs.bannerFile.value = '';
   imageCache.avatar = AVATAR_DEFAULT_SRC || PLACEHOLDER_AVATAR;
@@ -464,7 +467,7 @@ inputs.bannerFile.addEventListener('change', async (e) => {
 /* ===== Inputs change ===== */
 [inputs.name, inputs.role, inputs.email, inputs.phone, inputs.linkedin, inputs.lemcal]
   .forEach(el => el && el.addEventListener('input', renderPreview));
-[inputs.linkedinToggle, inputs.lemcalToggle]
+[inputs.linkedinToggle, inputs.lemcalToggle, inputs.bannerToggle]
   .forEach(el => el && el.addEventListener('change', renderPreview));
 
 /* ===== Buttons ===== */
@@ -489,6 +492,7 @@ btns.reset.addEventListener('click', () => {
   fileBtns.banner.textContent = 'Upload banner';
   fileBtns.avatar.classList.remove('used');
   fileBtns.banner.classList.remove('used');
+  if (inputs.bannerToggle) inputs.bannerToggle.checked = true; // cohérent avec défaut
   renderPreview();
 });
 

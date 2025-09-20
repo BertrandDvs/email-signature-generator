@@ -96,12 +96,20 @@
               </div>
             </div>
             <div>
-              <label>Banner</label>
-              <div class="file-input">
-                <input type="file" id="bannerFile" accept="image/*" />
-                <button type="button" class="btn file-btn" id="bannerBtn" onclick="bannerFile.click()">Upload banner</button>
-              </div>
-            </div>
+  <div class="social-head">
+    <label>Banner</label>
+    <label class="switch">
+      <input type="checkbox" id="bannerToggle" checked />
+      <span class="slider"></span>
+    </label>
+  </div>
+
+  <div class="file-input">
+    <input type="file" id="bannerFile" accept="image/*" />
+    <button type="button" class="btn file-btn" id="bannerBtn" onclick="bannerFile.click()">Upload banner</button>
+  </div>
+</div>
+
           </div>
         </div>
       </form>
