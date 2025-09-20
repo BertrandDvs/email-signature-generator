@@ -31,12 +31,12 @@ const BRAND_PROFILES = {
   },
   taplio: {
     key: 'taplio',
-    site: 'taplio.com',
+    site: 'www.taplio.com',
     colors: {
       separator:'#E6E6E6', name:'#1A1333', role:'#6F6B80',
       site:'#9BA0AC', text:'#14121A', muted:'#6F6B80', accent:'#7C4DFF'
     },
-    gradient: ['#7C4DFF','#5A31D4'],
+    gradient: ['#2C58B6','#204698ff'],
     assets: {
       // ⚠️ Ajoute ces fichiers (ou renomme ici selon tes noms réels)
       logoLocal:   'icons/taplio-logo.png',

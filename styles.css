@@ -41,19 +41,16 @@ body{
 
 /* Primary gradient button */
 .btnprim {
-  border-radius: 8px;
-  padding-left: 16px;
-  padding-right: 16px;
+  padding:8px 12px; border-radius:10px; font-size:14px; line-height:24px;
   color: white;
   border: 1px solid var(--Primary-300, #316BFF);
   background: linear-gradient(0deg, var(--Button-button-primary-300, #316BFF) -10%, var(--Button-button-primary-275, #477BFF) 100%);
   box-shadow: 0 0 6px 0 rgba(0, 0, 0, 0.02), 0 2px 4px 0 rgba(0, 0, 0, 0.08);
   transition: background .2s ease, border-color .2s ease, color .2s ease;
 }
-.btnprim:hover { 
-  border-radius: 8px;
-  padding-left: 16px;
-  padding-right: 16px;
+.btnprim:hover {
+  cursor: pointer;
+  padding:8px 12px; border-radius:10px; font-size:14px; line-height:24px;
   border: 1px solid var(--primary-color);
   background: linear-gradient(0deg, var(--Colors-Button-button-primary-300, #316BFF) 0%, var(--Colors-Button-button-primary-325, #1F5EFF) 100%);
   box-shadow: 0 0 6px 0 var(--shadow-2), 0 2px 4px 0 var(--shadow-8);
@@ -245,7 +242,7 @@ input[type="text"], input[type="email"], input[type="url"], input[type="tel"], i
   position: absolute;
   bottom: 20px;   /* marge avec le bas */
   left: 20px;     /* marge avec le bord gauche */
-  height: 80px;   /* ajuste selon ton badge */
+  height: 70px;   /* ajuste selon ton badge */
   pointer-events: none; /* évite de cliquer dessus */
   opacity: 1;   /* optionnel : un petit effet */
 }
@@ -262,21 +259,35 @@ input[type="text"], input[type="email"], input[type="url"], input[type="tel"], i
 }
 
 /* Toggle de marque dans le header */
-.brand-switch{
-  display:flex; gap:8px; align-items:center;
-  background:#fff; border:1px solid var(--border);
-  border-radius:14px; padding:4px;
+.brand-switch {
+  position: fixed;        /* le fait flotter par-dessus */
+  bottom: 20px;           /* marge bas */
+  right: 20px;            /* marge droite */
+  z-index: 1000;          /* reste au-dessus */
+  background:#fff;
+  border:1px solid var(--border);
+  border-radius:14px;
+  padding:4px;
+  display:flex;
+  gap:2px;
+  align-items:center;
+  box-shadow: 0 2px 8px rgba(0,0,0,.08);
 }
+
 .brand-switch .seg{
   appearance:none; border:0; background:#ffffff; cursor:pointer;
-  width:44px; height:36px; border-radius:10px; display:grid; place-items:center;
+  width:36px; height:36px; border-radius:10px; display:grid; place-items:center;
   transition: box-shadow .2s ease, background .2s ease, transform .08s ease;
 }
 .brand-switch .seg img{ display:block; width:24px; height:24px; }
-.brand-switch .seg:is(:hover,:focus-visible){ outline:none; box-shadow:0 0 0 2px rgba(49,107,255,.22) inset; }
+.brand-switch .seg:is(:hover,:focus-visible){ outline:none; box-shadow:0 0 0 1px rgba(49,107,255,.22) inset; }
 .brand-switch .seg.is-active{
-  background:#F7FAFF;
-  box-shadow: 0 0 0 2px rgba(49,107,255,.75) inset, 0 1px 4px rgba(0,0,0,.05);
+  background:#e3edfe;
+  box-shadow: 0 0 0 1px rgba(212, 224, 255, 0.75) inset, 0 1px 4px rgba(0,0,0,.05);
+}
+
+.brand-switch .seg:not(.is-active){
+  opacity: .3;                   /* ← demandé */
 }
 
 /* Preview => gradient piloté par variables */
@@ -286,3 +297,5 @@ input[type="text"], input[type="email"], input[type="url"], input[type="tel"], i
   min-height: 520px;
   padding:0;
 }
+
+
