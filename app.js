@@ -35,7 +35,7 @@ const BRAND_PROFILES = {
       separator:'#E6E6E6', name:'#1A1333', role:'#6F6B80',
       site:'#9BA0AC', text:'#14121A', muted:'#6F6B80', accent:'#7C4DFF'
     },
-    gradient: ['#2C58B6','#204698ff'],
+    gradient: ['#0568CC','#54A9FF'],
     assets: {
       logoLocal:   'icons/taplio-logo.png',
       avatarLocal: 'icons/taplio-avatar.png',
