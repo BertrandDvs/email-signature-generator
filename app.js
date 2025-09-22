@@ -52,6 +52,9 @@ const BRAND_PROFILES = {
 /* ===== Public assets base (GitHub Pages) ===== */
 const PUBLIC_ASSET_BASE = 'https://bertranddvs.github.io/email-signature-generator/icons/';
 
+/* >>> Cache-buster global <<< */
+const ASSET_VERSION = '2025-09-22-01'; // ← incrémente ce tag quand tu pousses de nouvelles images
+
 /* ===== State brand/theme (mutable) ===== */
 let CURRENT_BRAND = BRAND_PROFILES.lemlist; // défaut
 let THEME = { colors: CURRENT_BRAND.colors, site: CURRENT_BRAND.site };
@@ -181,21 +184,39 @@ function showCopied(btn, label = 'Copied') {
 
 /* ===== Public assets mapping ===== */
 function mapPublicAssets(profile){
+  const q = ASSET_VERSION ? `?v=${encodeURIComponent(ASSET_VERSION)}` : '';
   return {
-    logo:     PUBLIC_ASSET_BASE + profile.assets.logoPublic,
-    avatar:   PUBLIC_ASSET_BASE + profile.assets.avatarPublic,
-    banner:   PUBLIC_ASSET_BASE + profile.assets.bannerPublic,
-    linkedin: PUBLIC_ASSET_BASE + profile.assets.linkedinPublic,
-    lemcal:   PUBLIC_ASSET_BASE + profile.assets.lemcalPublic
+    logo:     PUBLIC_ASSET_BASE + profile.assets.logoPublic     + q,
+    avatar:   PUBLIC_ASSET_BASE + profile.assets.avatarPublic   + q,
+    banner:   PUBLIC_ASSET_BASE + profile.assets.bannerPublic   + q,
+    linkedin: PUBLIC_ASSET_BASE + profile.assets.linkedinPublic + q,
+    lemcal:   PUBLIC_ASSET_BASE + profile.assets.lemcalPublic   + q
   };
 }
 
 /* ===== Sanitize src for export (force HTTPS public GitHub Pages) ===== */
 function sanitizeSrcForEmail(src, kind) {
-  if (src && /^https:\/\//i.test(src)) return src;           // déjà https
+  const q = ASSET_VERSION ? `?v=${encodeURIComponent(ASSET_VERSION)}` : '';
+
+  // URL absolue déjà https
+  if (src && /^https:\/\//i.test(src)) {
+    try {
+      const u = new URL(src);
+      // Si c'est servi depuis GitHub Pages et pas déjà versionné, on ajoute v=...
+      if (u.hostname.includes('github.io') && ASSET_VERSION && !u.searchParams.has('v')) {
+        u.searchParams.set('v', ASSET_VERSION);
+        return u.toString();
+      }
+    } catch {}
+    return src; // autre domaine : on ne touche pas
+  }
+
+  // Mapping "kind" → URL publique versionnée
   if (kind && PUBLIC_ASSETS_CURRENT[kind]) return PUBLIC_ASSETS_CURRENT[kind];
+
+  // Sinon, on reconstruit à partir du nom de fichier
   const file = String(src || '').split('/').pop();
-  return PUBLIC_ASSET_BASE + file;
+  return PUBLIC_ASSET_BASE + file + q;
 }
 
 /* ===== State ===== */
