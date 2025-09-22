@@ -5,9 +5,8 @@
   --muted:#5B6B7D;
   --border:#E6E6E6;
   --accent:#316bff;
-  /* défaut lemlist */
-  --grad-start:#316BFF; /* défaut lemlist */
-  --grad-end:#134CDD;   /* défaut lemlist */
+  --grad-start:#316BFF;
+  --grad-end:#134CDD;
 }
 
 *{ box-sizing:border-box }
@@ -25,18 +24,10 @@ body{
 
 /* Header */
 .app-header{
-  height:56px;
-  padding:0 14px;
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:10px;
-  border-bottom:1px solid var(--border);
-  background:#fff;
+  height:56px; padding:0 14px; display:flex; align-items:center; justify-content:space-between; gap:10px;
+  border-bottom:1px solid var(--border); background:#fff;
 }
-.app-header h1{
-  font-size:15px; margin:0; font-weight:700; letter-spacing:.2px; color:#17161B
-}
+.app-header h1{ font-size:15px; margin:0; font-weight:700; letter-spacing:.2px; color:#17161B }
 .actions{ display:flex; gap:8px; flex-wrap:nowrap }
 
 .btn{
@@ -46,38 +37,27 @@ body{
   transition: background .2s ease, border-color .2s ease, color .2s ease;
 }
 .btn:hover{ border-color:#cbcbcb }
-.btn.primary{ background: var(--accent); border-color: var(--accent); color:#fff }
 .btn.ghost{ background:transparent; }
 
 /* Primary gradient button */
 .btnprim {
   padding:8px 12px; border-radius:10px; font-size:14px; line-height:24px; color: white;
-  border: 1px solid var(--Primary-300, #316BFF);
+  border: 1px solid var(--accent);
   background: linear-gradient(135deg, #316BFF 0%, #477BFF 100%);
   box-shadow: 0 0 6px 0 rgba(0, 0, 0, 0.02), 0 2px 4px 0 rgba(0, 0, 0, 0.08);
-  transition: background .2s ease, border-color .2s ease, color .2s ease;
 }
-.btnprim:hover {
-  border: 1px solid var(--accent);
-  background: linear-gradient(135deg, #316BFF 0%, #1F5EFF 100%);
-}
+.btnprim:hover { background: linear-gradient(135deg, #316BFF 0%, #1F5EFF 100%); }
 
 /* Layout */
 .wrap{
-  display:grid;
-  grid-template-columns: 740px 420px;
-  gap:14px; place-content:center; width:fit-content;
-  margin:24px auto; padding:0 14px;
-  min-height: calc(100vh - 56px - 48px);
+  display:grid; grid-template-columns: 740px 420px; gap:14px; place-content:center; width:fit-content;
+  margin:24px auto; padding:0 14px; min-height: calc(100vh - 56px - 48px);
 }
 
 /* Cards */
 .panel{
-  background: var(--panel);
-  border:1px solid var(--border);
-  border-radius:16px;
-  box-shadow: 0 4px 16px rgba(0,0,0,.08);
-  padding:40px;
+  background: var(--panel); border:1px solid var(--border); border-radius:16px;
+  box-shadow: 0 4px 16px rgba(0,0,0,.08); padding:40px;
 }
 .panel form{ padding: 20px; }
 
@@ -86,10 +66,7 @@ body{
   background: linear-gradient(135deg, var(--grad-start) 0%, var(--grad-end) 100%);
   border-color: transparent; min-height: 520px; padding:0;
 }
-.preview-inner{
-  width:100%; height:100%;
-  display:flex; align-items:center; justify-content:center; overflow:hidden;
-}
+.preview-inner{ width:100%; height:100%; display:flex; align-items:center; justify-content:center; overflow:hidden; }
 .signature-base{ display:inline-block; transform-origin: top left; }
 .preview-card{
   display:inline-block; background:#fff; border-radius:14px;
@@ -104,10 +81,8 @@ body{
 .grid-2{ display:grid; grid-template-columns: 1fr 1fr; gap:12px; }
 .row{ margin:0; }
 label{ display:block; font-size:12px; color:#697586; margin:4px 0 6px }
-
 input[type="text"], input[type="email"], input[type="url"], input[type="tel"], input[type="number"]{
-  width:100%; height:40px; padding:8px 12px; border-radius:10px;
-  border:1px solid var(--border); background:#fff; color:#17161B; outline:none; font-size:15px;
+  width:100%; height:40px; padding:8px 12px; border-radius:10px; border:1px solid var(--border); background:#fff; color:#17161B; outline:none; font-size:15px;
 }
 
 /* Social row */
@@ -116,11 +91,8 @@ input[type="text"], input[type="email"], input[type="url"], input[type="tel"], i
 .social-head{ display:flex; align-items:center; justify-content:space-between; }
 .social-head label{ margin:0; }
 
-/* Toggle  */
-.switch{
-  --w: 28px; --h: 14px; --pad: 2px; --travel: calc(var(--w) - var(--h));
-  position: relative; display: inline-block; width: var(--w); height: var(--h); vertical-align: middle;
-}
+/* Toggle */
+.switch{ --w: 28px; --h: 14px; --pad: 2px; --travel: calc(var(--w) - var(--h)); position: relative; display: inline-block; width: var(--w); height: var(--h); vertical-align: middle; }
 .switch input{ display:none; }
 .slider{
   position: absolute; inset:0; cursor: pointer; border-radius: 100px;
@@ -159,13 +131,10 @@ input[type="text"], input[type="email"], input[type="url"], input[type="tel"], i
 @keyframes drawCheck { to { stroke-dashoffset: 0; } }
 
 /* Badge décoratif */
-.site-badge {
-  position: absolute; bottom: 20px; left: 20px; height: 70px;
-  pointer-events: none; opacity: 1;
-}
+.site-badge { position: absolute; bottom: 20px; left: 20px; height: 70px; pointer-events: none; opacity: 1; }
 
 /* Brand switch (flottant BR) */
-.brand-switch {
+.brand-switch{
   position: fixed; bottom: 20px; right: 20px; z-index: 1000;
   background:#fff; border:1px solid var(--border); border-radius:14px; padding:4px;
   display:flex; gap:2px; align-items:center; box-shadow: 0 2px 8px rgba(0,0,0,.08);
@@ -177,10 +146,8 @@ input[type="text"], input[type="email"], input[type="url"], input[type="tel"], i
 }
 .brand-switch .seg img{ display:block; width:24px; height:24px; }
 .brand-switch .seg:is(:hover,:focus-visible){ outline:none; box-shadow:0 0 0 1px rgba(49,107,255,.22) inset; }
-.brand-switch .seg.is-active{
-  background:#e3edfe; box-shadow: 0 0 0 1px rgba(212, 224, 255, 0.75) inset, 0 1px 4px rgba(0,0,0,.05);
-}
+.brand-switch .seg.is-active{ background:#e3edfe; box-shadow: 0 0 0 1px rgba(212, 224, 255, 0.75) inset, 0 1px 4px rgba(0,0,0,.05); }
 .brand-switch .seg:not(.is-active){ opacity: .3; }
 
-/* Cache le toggle LinkedIn si besoin : (garde tel quel si tu l’utilises) */
+/* (si tu veux forcer LinkedIn ON sans toggle visible) */
 #linkedinToggle, #linkedinToggle + .slider { display: none !important; }

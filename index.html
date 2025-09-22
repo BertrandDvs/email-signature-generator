@@ -12,7 +12,7 @@
   <header class="app-header">
     <h1>Email Signature Generator</h1>
     <div class="actions">
-      <!-- Toggle de marques (flottant en bas à droite via CSS) -->
+      <!-- Switch de marques (flotte en bas à droite via CSS) -->
       <div class="brand-switch" role="tablist" aria-label="Brand switch">
         <button class="seg is-active" id="brandLemlist" data-brand="lemlist" role="tab" aria-selected="true" title="lemlist">
           <img src="icons/lemlist-app.png" alt="lemlist" width="24" height="24" />
@@ -24,7 +24,7 @@
 
       <button class="btnprim" id="copyGmail">Copy for Gmail</button>
       <button class="btn ghost" id="openGmail" title="Open Gmail Settings">Open Gmail</button>
-      <!-- Bouton Reset retiré -->
+      <!-- Reset retiré -->
     </div>
   </header>
 
@@ -36,7 +36,6 @@
           <div class="preview-card" id="previewCard">
             <div id="signaturePreview"></div>
           </div>
-          <!-- Badge décoratif (uniquement sur le site) -->
           <img src="icons/badge.png" alt="Badge" class="site-badge" />
         </div>
       </div>
@@ -91,10 +90,10 @@
             </div>
           </div>
 
-          <!-- Uploads : Photo uniquement / Bannière = toggle seulement -->
+          <!-- Upload photo (preview) + URL https pour l'export -->
           <div class="row grid-2">
             <div>
-              <label>Photo</label>
+              <label>Photo (pour l’aperçu)</label>
               <div class="file-input">
                 <input type="file" id="avatarFile" accept="image/*" />
                 <button type="button" class="btn file-btn" id="avatarBtn" onclick="avatarFile.click()">Upload photo</button>
@@ -102,15 +101,21 @@
             </div>
 
             <div>
-              <div class="social-head">
-                <label>Banner (500x160)</label>
-                <label class="switch">
-                  <input type="checkbox" id="bannerToggle" checked />
-                  <span class="slider"></span>
-                </label>
-              </div>
-              <!-- Plus d'upload de bannière ici -->
+              <label for="avatarUrl">Avatar URL (https) — utilisé dans Gmail</label>
+              <input type="url" id="avatarUrl" placeholder="https://signature.bdvs.me/uploads/avatar.png" />
             </div>
+          </div>
+
+          <!-- Bannière : toggle seulement -->
+          <div class="row">
+            <div class="social-head">
+              <label>Banner (500x160)</label>
+              <label class="switch">
+                <input type="checkbox" id="bannerToggle" checked />
+                <span class="slider"></span>
+              </label>
+            </div>
+            <!-- pas d’upload -->
           </div>
         </div>
       </form>

@@ -3,7 +3,7 @@ const BASE_PREVIEW_SCALE = 0.92;
 const PREVIEW_MAX_WIDTH = 500;
 
 /* ============================================================================
-   Brand profiles (couleurs, site, assets)
+   Brand profiles
    ========================================================================== */
 const BRAND_PROFILES = {
   lemlist: {
@@ -15,15 +15,12 @@ const BRAND_PROFILES = {
     },
     gradient: ['#316BFF','#134CDD'],
     assets: {
-      // locaux (preview)
       logoLocal: 'icons/logo.gif',
       avatarLocal: 'icons/avatar-placeholder.png',
       bannerLocal: 'icons/banner-placeholder.png',
-      // publics (GitHub Pages)
       logoPublic: 'logo.gif',
       avatarPublic: 'avatar-placeholder.png',
       bannerPublic: 'banner-placeholder.png',
-      // icônes sociaux (communs)
       linkedinPublic: 'linkedin.png',
       lemcalPublic: 'lemcal.png'
     }
@@ -49,30 +46,30 @@ const BRAND_PROFILES = {
   }
 };
 
-/* ===== Public assets base (GitHub Pages) ===== */
-const PUBLIC_ASSET_BASE = `${location.origin}/icons/`;
+/* ===== Public assets base (dynamique, support custom domain) ===== */
+// const PUBLIC_ASSET_BASE = 'https://bertranddvs.github.io/email-signature-generator/icons/';
+const PUBLIC_ASSET_BASE = new URL('./icons/', location.href).href;
 
-/* ===== State brand/theme (mutable) ===== */
-let CURRENT_BRAND = BRAND_PROFILES.lemlist; // défaut
+/* ===== State brand/theme ===== */
+let CURRENT_BRAND = BRAND_PROFILES.lemlist;
 let THEME = { colors: CURRENT_BRAND.colors, site: CURRENT_BRAND.site };
 let PUBLIC_ASSETS_CURRENT = mapPublicAssets(CURRENT_BRAND);
 
-/* ===== Colors (fallbacks SVG) ===== */
+/* ===== Fallbacks / placeholders ===== */
 const LINKEDIN_FALLBACK = rectSVG(40, 40, '#0A66C2', 'in');
 const LEMCAL_FALLBACK   = rectSVG(40, 40, '#316BFF', 'cal');
-// placeholders
-const PLACEHOLDER_AVATAR = rectSVG(89, 89, '#E9EEF2', 'Photo');
-const PLACEHOLDER_BANNER = rectSVG(600, 120, '#DDEEE8', 'Banner');
+const PLACEHOLDER_AVATAR= rectSVG(89, 89, '#E9EEF2', 'Photo');
+const PLACEHOLDER_BANNER= rectSVG(600, 120, '#DDEEE8', 'Banner');
 
-/* ===== Local icons (preview / app) ===== */
+/* ===== Local icons ===== */
 const ASSETS = { linkedin: 'icons/linkedin.png', lemcal: 'icons/lemcal.png' };
 
-/* ===== Image sources (no web fetch) — remplacées via applyBrand() ===== */
-let LOGO_SRC          = CURRENT_BRAND.assets.logoLocal;
-let ICON_LINKEDIN_SRC = ASSETS.linkedin;
-let ICON_LEMCAL_SRC   = ASSETS.lemcal;
-let AVATAR_DEFAULT_SRC= CURRENT_BRAND.assets.avatarLocal;
-let BANNER_DEFAULT_SRC= CURRENT_BRAND.assets.bannerLocal;
+/* ===== Image sources ===== */
+let LOGO_SRC           = CURRENT_BRAND.assets.logoLocal;
+let ICON_LINKEDIN_SRC  = ASSETS.linkedin;
+let ICON_LEMCAL_SRC    = ASSETS.lemcal;
+let AVATAR_DEFAULT_SRC = CURRENT_BRAND.assets.avatarLocal;
+let BANNER_DEFAULT_SRC = CURRENT_BRAND.assets.bannerLocal;
 
 /* ===== DOM helpers ===== */
 const $    = (sel) => document.querySelector(sel);
@@ -89,10 +86,9 @@ const inputs = {
   lemcal: byId('lemcal'),
   lemcalToggle: byId('lemcalToggle'),
   avatarFile: byId('avatarFile'),
-  bannerToggle: byId('bannerToggle') // toggle uniquement
+  avatarUrl: byId('avatarUrl'), // <-- NOUVEAU : URL https pour export
+  bannerToggle: byId('bannerToggle')
 };
-
-/* Expose pour onclick HTML */
 window.avatarFile = inputs.avatarFile;
 
 /* Buttons & containers */
@@ -146,7 +142,7 @@ async function copyHtmlToClipboard(html, plainTextFallback = '') {
 function showCopied(btn, label = 'Copied') {
   if (!btn.dataset.label) btn.dataset.label = btn.textContent.trim();
   const styles = getComputedStyle(btn);
-  btn.style.width = styles.width; // évite le “jump”
+  btn.style.width = styles.width;
   btn.disabled = true;
   btn.classList.add('is-copied');
   btn.innerHTML = `
@@ -165,17 +161,27 @@ function showCopied(btn, label = 'Copied') {
 /* ===== Public assets mapping ===== */
 function mapPublicAssets(profile){
   return {
-    logo:    PUBLIC_ASSET_BASE + profile.assets.logoPublic,
-    avatar:  PUBLIC_ASSET_BASE + profile.assets.avatarPublic,
-    banner:  PUBLIC_ASSET_BASE + profile.assets.bannerPublic,
-    linkedin:PUBLIC_ASSET_BASE + profile.assets.linkedinPublic,
-    lemcal:  PUBLIC_ASSET_BASE + profile.assets.lemcalPublic
+    logo:     PUBLIC_ASSET_BASE + profile.assets.logoPublic,
+    avatar:   PUBLIC_ASSET_BASE + profile.assets.avatarPublic,
+    banner:   PUBLIC_ASSET_BASE + profile.assets.bannerPublic,
+    linkedin: PUBLIC_ASSET_BASE + profile.assets.linkedinPublic,
+    lemcal:   PUBLIC_ASSET_BASE + profile.assets.lemcalPublic
   };
 }
 
-/* ===== Sanitize src pour export (force HTTPS) ===== */
-function sanitizeSrcForEmail(src, kind) {
-  if (src && /^https:\/\//i.test(src)) return src; // déjà https
+/* ===== Helpers ===== */
+function isHttpsUrl(u=''){ try { const {protocol} = new URL(u); return protocol === 'https:'; } catch { return false; } }
+function isDataUrl(u=''){ return typeof u === 'string' && u.startsWith('data:'); }
+
+/* ===== Sanitize src pour export (avec override avatarUrl) ===== */
+function sanitizeSrcForEmail(src, kind, overrides = {}) {
+  // Si une URL https explicite est fournie (ex: avatarUrl), on la privilégie
+  if (kind === 'avatar' && overrides.avatarUrl && isHttpsUrl(overrides.avatarUrl)) {
+    return overrides.avatarUrl;
+  }
+  // Si déjà https, ok
+  if (src && /^https:\/\//i.test(src)) return src;
+  // Sinon on mappe sur les assets publics connus
   if (kind && PUBLIC_ASSETS_CURRENT[kind]) return PUBLIC_ASSETS_CURRENT[kind];
   const file = String(src || '').split('/').pop();
   return PUBLIC_ASSET_BASE + file;
@@ -184,7 +190,7 @@ function sanitizeSrcForEmail(src, kind) {
 /* ===== State ===== */
 const imageCache = {
   avatar: AVATAR_DEFAULT_SRC || PLACEHOLDER_AVATAR,
-  banner: BANNER_DEFAULT_SRC || PLACEHOLDER_BANNER, // pas d’upload, uniquement default brand
+  banner: BANNER_DEFAULT_SRC || PLACEHOLDER_BANNER,
 };
 
 function collectState() {
@@ -201,18 +207,21 @@ function collectState() {
 
   const bannerEnabled = !!(inputs.bannerToggle ? inputs.bannerToggle.checked : true);
 
+  const avatarUrl = inputs.avatarUrl.value.trim(); // <-- nouveau
+
   return {
     name, role, email, phone,
     linkedin, linkedinEnabled,
     lemcal, lemcalEnabled,
     avatar: imageCache.avatar,
+    avatarUrl, // pour l’export
     logo: LOGO_SRC || rectSVG(100, 28, THEME.colors.accent, CURRENT_BRAND.key),
     banner: imageCache.banner,
     bannerEnabled,
   };
 }
 
-/* ===== Email HTML (THEME dynamique) ===== */
+/* ===== Email HTML ===== */
 function buildEmailHTML(state, { align = 'center' } = {}) {
   const { name, role, email, phone, linkedin, linkedinEnabled, lemcal, lemcalEnabled, avatar, logo, banner, bannerEnabled } = state;
   const C = THEME.colors;
@@ -328,19 +337,21 @@ function buildEmailHTML(state, { align = 'center' } = {}) {
   `.trim();
 }
 
-/* ===== Variante export (force URLs publiques) ===== */
+/* ===== Export HTML (force URLs publiques + override avatarUrl) ===== */
 function buildEmailHTMLForExport(state, opts) {
+  const overrides = { avatarUrl: state.avatarUrl };
   const safeState = {
     ...state,
-    logo:   sanitizeSrcForEmail(state.logo, 'logo'),
-    avatar: sanitizeSrcForEmail(state.avatar, 'avatar'),
-    banner: sanitizeSrcForEmail(state.banner, 'banner'),
+    logo:   sanitizeSrcForEmail(state.logo,   'logo',   overrides),
+    // Si avatar est un data: et qu'on a une URL https fournie, on l'utilise. Sinon, mapping public (placeholder).
+    avatar: sanitizeSrcForEmail(state.avatar, 'avatar', overrides),
+    banner: sanitizeSrcForEmail(state.banner, 'banner', overrides),
   };
+
   const _iconLinkedin = ICON_LINKEDIN_SRC;
   const _iconLemcal   = ICON_LEMCAL_SRC;
-
-  ICON_LINKEDIN_SRC = sanitizeSrcForEmail(ICON_LINKEDIN_SRC || LINKEDIN_FALLBACK, 'linkedin');
-  ICON_LEMCAL_SRC   = sanitizeSrcForEmail(ICON_LEMCAL_SRC   || LEMCAL_FALLBACK,   'lemcal');
+  ICON_LINKEDIN_SRC   = sanitizeSrcForEmail(ICON_LINKEDIN_SRC || LINKEDIN_FALLBACK, 'linkedin', overrides);
+  ICON_LEMCAL_SRC     = sanitizeSrcForEmail(ICON_LEMCAL_SRC   || LEMCAL_FALLBACK,   'lemcal',   overrides);
 
   const html = buildEmailHTML(safeState, opts);
 
@@ -348,13 +359,18 @@ function buildEmailHTMLForExport(state, opts) {
   ICON_LINKEDIN_SRC = _iconLinkedin;
   ICON_LEMCAL_SRC   = _iconLemcal;
 
+  // Petit warning si on a dû retomber sur le placeholder
+  if (isDataUrl(state.avatar) && !isHttpsUrl(state.avatarUrl)) {
+    console.warn('Avertissement: l’avatar uploadé est en data: ; fournissez une Avatar URL (https) pour l’export Gmail, sinon le placeholder est utilisé.');
+  }
+
   return html;
 }
 
 /* ===== Preview renderer ===== */
 function renderPreview() {
   const state = collectState();
-  els.preview.innerHTML = buildEmailHTML(state, { align: 'center' }); // preview centrée
+  els.preview.innerHTML = buildEmailHTML(state, { align: 'center' });
 
   const card = els.previewCard;
   card.style.maxWidth = PREVIEW_MAX_WIDTH + 'px';
@@ -380,22 +396,20 @@ function applyBrand(key){
   THEME = { colors: prof.colors, site: prof.site };
   PUBLIC_ASSETS_CURRENT = mapPublicAssets(prof);
 
-  // CSS variables (accent + gradient)
   document.documentElement.style.setProperty('--accent', prof.colors.accent);
   document.documentElement.style.setProperty('--grad-start', prof.gradient[0]);
   document.documentElement.style.setProperty('--grad-end',   prof.gradient[1]);
 
-  // Set local defaults
   LOGO_SRC           = prof.assets.logoLocal;
   AVATAR_DEFAULT_SRC = prof.assets.avatarLocal;
   BANNER_DEFAULT_SRC = prof.assets.bannerLocal;
 
-  // Reset images à la brand
+  // Reset preview images à la brand
   inputs.avatarFile.value = '';
   imageCache.avatar = AVATAR_DEFAULT_SRC || PLACEHOLDER_AVATAR;
   imageCache.banner = BANNER_DEFAULT_SRC || PLACEHOLDER_BANNER;
 
-  // UI toggle état actif
+  // UI état du switch
   const btnL = byId('brandLemlist');
   const btnT = byId('brandTaplio');
   if (btnL && btnT){
@@ -408,7 +422,7 @@ function applyBrand(key){
   renderPreview();
 }
 
-/* ===== File input: avatar seulement ===== */
+/* ===== File input: avatar (preview) ===== */
 inputs.avatarFile.addEventListener('change', async (e) => {
   const f = e.target.files?.[0];
   imageCache.avatar = f ? await fileToDataURL(f) : (AVATAR_DEFAULT_SRC || PLACEHOLDER_AVATAR);
@@ -421,7 +435,7 @@ inputs.avatarFile.addEventListener('change', async (e) => {
 });
 
 /* ===== Inputs change ===== */
-[inputs.name, inputs.role, inputs.email, inputs.phone, inputs.linkedin, inputs.lemcal]
+[inputs.name, inputs.role, inputs.email, inputs.phone, inputs.linkedin, inputs.lemcal, inputs.avatarUrl]
   .forEach(el => el && el.addEventListener('input', renderPreview));
 
 [inputs.linkedinToggle, inputs.lemcalToggle, inputs.bannerToggle]
@@ -429,14 +443,20 @@ inputs.avatarFile.addEventListener('change', async (e) => {
 
 /* ===== Buttons ===== */
 btns.copyGmail.addEventListener('click', async () => {
-  const htmlExport = buildEmailHTMLForExport(collectState(), { align: 'left' });
+  const state = collectState();
+  const htmlExport = buildEmailHTMLForExport(state, { align: 'left' });
   const html = wrapForGmail(htmlExport);
   try {
     await copyHtmlToClipboard(html, '');
   } catch {
     await navigator.clipboard.writeText(html);
   } finally {
-    showCopied(btns.copyGmail);
+    // Si pas d’URL https fournie alors qu’on avait un data:, signale-le visuellement
+    if (isDataUrl(state.avatar) && !isHttpsUrl(state.avatarUrl)) {
+      showCopied(btns.copyGmail, 'Copied (avatar=placeholder)');
+    } else {
+      showCopied(btns.copyGmail);
+    }
   }
 });
 
@@ -446,10 +466,12 @@ btns.openGmail.addEventListener('click', () => {
 
 /* ===== Init ===== */
 window.addEventListener('load', () => {
-  // Initial brand (lemlist)
+  if (location.protocol !== 'https:') {
+    console.warn('Tip: active HTTPS sur le domaine pour permettre la copie HTML riche (ClipboardItem).');
+  }
+
   applyBrand('lemlist');
 
-  // Wire brand toggle
   document.querySelectorAll('.brand-switch .seg').forEach(btn => {
     btn.addEventListener('click', (e) => {
       const k = e.currentTarget.dataset.brand;
