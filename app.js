@@ -53,7 +53,7 @@ const BRAND_PROFILES = {
 const PUBLIC_ASSET_BASE = 'https://bertranddvs.github.io/email-signature-generator/icons/';
 
 /* >>> Cache-buster global <<< */
-const ASSET_VERSION = '2025-09-22-01'; // ← incrémente ce tag quand tu pousses de nouvelles images
+const ASSET_VERSION = '2025-09-22-02'; // ← incrémente ce tag quand tu pousses de nouvelles images
 
 /* ===== State brand/theme (mutable) ===== */
 let CURRENT_BRAND = BRAND_PROFILES.lemlist; // défaut
@@ -94,7 +94,7 @@ const inputs = {
   lemcalToggle: byId('lemcalToggle'),
   avatarFile: byId('avatarFile'),
   bannerFile: byId('bannerFile'),
-  bannerToggle: byId('bannerToggle'), // ← nouveau
+  bannerToggle: byId('bannerToggle'),
 };
 
 const fileBtns = {
@@ -182,6 +182,53 @@ function showCopied(btn, label = 'Copied') {
   }, 1200);
 }
 
+/* ======= Gmail limit helpers (compression + minify) ======= */
+const GMAIL_HTML_SOFT_LIMIT = 9800; // marge sécurité
+const AVATAR_EXPORT_MAX_PX = 89;    // affichage 89x89
+const BANNER_EXPORT_MAX_W  = 600;   // max-width visuel
+const BANNER_EXPORT_MAX_H  = 120;
+
+/** Downscale + recompress a data URL (returns new data URL) */
+async function compressDataUrl(dataUrl, {maxW, maxH, mime='image/jpeg', quality=0.72}) {
+  if (!/^data:/i.test(dataUrl)) return dataUrl;
+
+  const img = await new Promise((res, rej) => {
+    const im = new Image();
+    im.onload = () => res(im);
+    im.onerror = rej;
+    im.src = dataUrl;
+  });
+
+  // Compute target size
+  let tw = img.naturalWidth, th = img.naturalHeight;
+  if (maxW && tw > maxW) { th = Math.round(th * (maxW / tw)); tw = maxW; }
+  if (maxH && th > maxH) { tw = Math.round(tw * (maxH / th)); th = maxH; }
+
+  const canvas = document.createElement('canvas');
+  canvas.width = tw; canvas.height = th;
+  const ctx = canvas.getContext('2d');
+  ctx.drawImage(img, 0, 0, tw, th);
+
+  // Try progressive qualities to shrink
+  const qualities = [quality, 0.64, 0.56, 0.48, 0.4];
+  let out = dataUrl;
+  for (const q of qualities) {
+    out = canvas.toDataURL(mime, q);
+    // stop early if already small enough
+    if (out.length < 15000) break; // ~11KB base64 ≈ 15k chars
+  }
+  return out;
+}
+
+/** Tiny HTML minifier (removes comments & excessive whitespace) */
+function minifyHtml(html) {
+  return html
+    .replace(/<!--[\s\S]*?-->/g, '')     // remove comments
+    .replace(/\s{2,}/g, ' ')             // collapse spaces
+    .replace(/>\s+</g, '><')             // trim between tags
+    .trim();
+}
+
 /* ===== Public assets mapping ===== */
 function mapPublicAssets(profile){
   const q = ASSET_VERSION ? `?v=${encodeURIComponent(ASSET_VERSION)}` : '';
@@ -197,25 +244,31 @@ function mapPublicAssets(profile){
 /* ===== Sanitize src for export (force HTTPS public GitHub Pages) ===== */
 function sanitizeSrcForEmail(src, kind) {
   const q = ASSET_VERSION ? `?v=${encodeURIComponent(ASSET_VERSION)}` : '';
+  const s = String(src || '');
 
-  // URL absolue déjà https
-  if (src && /^https:\/\//i.test(src)) {
+  // 1) Laisser passer les uploads (data:… base64)
+  if (/^data:/i.test(s)) return s;
+
+  // 2) (Optionnel) Laisser passer blob:
+  if (/^blob:/i.test(s)) return s;
+
+  // 3) URL absolue https → si c’est du GitHub Pages et pas versionné, on ajoute ?v=
+  if (/^https:\/\//i.test(s)) {
     try {
-      const u = new URL(src);
-      // Si c'est servi depuis GitHub Pages et pas déjà versionné, on ajoute v=...
+      const u = new URL(s);
       if (u.hostname.includes('github.io') && ASSET_VERSION && !u.searchParams.has('v')) {
         u.searchParams.set('v', ASSET_VERSION);
         return u.toString();
       }
     } catch {}
-    return src; // autre domaine : on ne touche pas
+    return s;
   }
 
-  // Mapping "kind" → URL publique versionnée
+  // 4) Mapping par 'kind'
   if (kind && PUBLIC_ASSETS_CURRENT[kind]) return PUBLIC_ASSETS_CURRENT[kind];
 
-  // Sinon, on reconstruit à partir du nom de fichier
-  const file = String(src || '').split('/').pop();
+  // 5) Fallback : reconstruire depuis le nom de fichier local
+  const file = s.split('/').pop();
   return PUBLIC_ASSET_BASE + file + q;
 }
 
@@ -385,23 +438,53 @@ function buildEmailHTML(state, { align = 'center' } = {}) {
 </table>`.trim();
 }
 
-/* ===== Variante export (force URLs publiques) ===== */
-function buildEmailHTMLForExport(state, opts) {
+/* ===== Variante export (force URLs publiques + optimise data:) ===== */
+async function buildEmailHTMLForExportAsync(state, opts) {
+  // 1) clone & sanitize URL-based images
   const safeState = {
     ...state,
     logo:   sanitizeSrcForEmail(state.logo,   'logo'),
-    avatar: sanitizeSrcForEmail(state.avatar, 'avatar'),
-    banner: sanitizeSrcForEmail(state.banner, 'banner'),
+    avatar: state.avatar, // traiter data: plus bas
+    banner: state.banner, // idem
   };
 
+  // 2) Si avatar/banner sont en data:, compresse/resize ; sinon, sanitize https + cache-buster
+  if (/^data:/i.test(safeState.avatar)) {
+    safeState.avatar = await compressDataUrl(safeState.avatar, {
+      maxW: AVATAR_EXPORT_MAX_PX, maxH: AVATAR_EXPORT_MAX_PX, mime: 'image/jpeg', quality: 0.72
+    });
+  } else {
+    safeState.avatar = sanitizeSrcForEmail(safeState.avatar, 'avatar');
+  }
+
+  if (/^data:/i.test(safeState.banner)) {
+    safeState.banner = await compressDataUrl(safeState.banner, {
+      maxW: BANNER_EXPORT_MAX_W, maxH: BANNER_EXPORT_MAX_H, mime: 'image/jpeg', quality: 0.72
+    });
+  } else {
+    safeState.banner = sanitizeSrcForEmail(safeState.banner, 'banner');
+  }
+
+  // 3) icônes sociaux : forcer https + cache-buster
   const _iconLinkedin = ICON_LINKEDIN_SRC;
   const _iconLemcal   = ICON_LEMCAL_SRC;
-
   ICON_LINKEDIN_SRC = sanitizeSrcForEmail(ICON_LINKEDIN_SRC || LINKEDIN_FALLBACK, 'linkedin');
   ICON_LEMCAL_SRC   = sanitizeSrcForEmail(ICON_LEMCAL_SRC   || LEMCAL_FALLBACK,   'lemcal');
 
-  const html = buildEmailHTML(safeState, opts);
+  // 4) build
+  let html = buildEmailHTML(safeState, opts);
 
+  // 5) minify
+  html = minifyHtml(html);
+
+  // 6) sécurité : si on dépasse la limite, retirer la bannière en dernier recours
+  if (html.length > GMAIL_HTML_SOFT_LIMIT && (safeState.banner && state.bannerEnabled !== false)) {
+    const tmpState = { ...safeState };
+    const tmp = { ...state, bannerEnabled: false };
+    html = minifyHtml(buildEmailHTML(tmp, opts));
+  }
+
+  // 7) restore icons
   ICON_LINKEDIN_SRC = _iconLinkedin;
   ICON_LEMCAL_SRC   = _iconLemcal;
 
@@ -493,7 +576,7 @@ inputs.bannerFile.addEventListener('change', async (e) => {
 
 /* ===== Buttons ===== */
 btns.copyGmail.addEventListener('click', async () => {
-  const htmlExport = buildEmailHTMLForExport(collectState(), { align: 'left' });
+  const htmlExport = await buildEmailHTMLForExportAsync(collectState(), { align: 'left' });
   const html = wrapForGmail(htmlExport);
   try { await copyHtmlToClipboard(html, ''); }
   catch { await navigator.clipboard.writeText(html); }
