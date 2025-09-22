@@ -272,6 +272,37 @@ function sanitizeSrcForEmail(src, kind) {
   return PUBLIC_ASSET_BASE + file + q;
 }
 
+/* ====== NEW: chemin → URL absolue + dataURL helper (pour GitHub Pages) ====== */
+function resolveForFetch(src) {
+  if (!src) return '';
+  if (/^(data:|blob:|https?:\/\/)/i.test(src)) return src;
+  try {
+    return new URL(src, window.location.href).toString();
+  } catch {
+    return src;
+  }
+}
+function withCacheBuster(u) {
+  try {
+    const url = new URL(u, location.origin);
+    url.searchParams.set('_v', ASSET_VERSION || Date.now().toString(36));
+    return url.toString();
+  } catch { return u; }
+}
+async function urlToDataURL(src) {
+  const resolved = resolveForFetch(src);
+  const busted = withCacheBuster(resolved);
+  const res = await fetch(busted, { mode: 'cors', cache: 'no-store' });
+  if (!res.ok) throw new Error(`Fetch failed for ${src} (${res.status})`);
+  const blob = await res.blob();
+  return new Promise((resolve, reject) => {
+    const fr = new FileReader();
+    fr.onload = () => resolve(fr.result);
+    fr.onerror = reject;
+    fr.readAsDataURL(blob);
+  });
+}
+
 /* ===== State ===== */
 const imageCache = {
   avatar: AVATAR_DEFAULT_SRC || PLACEHOLDER_AVATAR,
@@ -439,52 +470,62 @@ function buildEmailHTML(state, { align = 'center' } = {}) {
 }
 
 /* ===== Variante export (force URLs publiques + optimise data:) ===== */
+/* >>> MODIFIÉ : avatar & bannière seront TOUJOURS inlinés (data:) avant la copie <<< */
 async function buildEmailHTMLForExportAsync(state, opts) {
   // 1) clone & sanitize URL-based images
   const safeState = {
     ...state,
-    logo:   sanitizeSrcForEmail(state.logo,   'logo'),
-    avatar: state.avatar, // traiter data: plus bas
-    banner: state.banner, // idem
+    logo: sanitizeSrcForEmail(state.logo, 'logo'),
+    avatar: state.avatar,
+    banner: state.banner,
   };
 
-  // 2) Si avatar/banner sont en data:, compresse/resize ; sinon, sanitize https + cache-buster
+  // 2) Avatar → dataURL
   if (/^data:/i.test(safeState.avatar)) {
     safeState.avatar = await compressDataUrl(safeState.avatar, {
       maxW: AVATAR_EXPORT_MAX_PX, maxH: AVATAR_EXPORT_MAX_PX, mime: 'image/jpeg', quality: 0.72
     });
   } else {
-    safeState.avatar = sanitizeSrcForEmail(safeState.avatar, 'avatar');
+    // Sanitize vers URL publique puis fetch → data:
+    const avatarUrl = sanitizeSrcForEmail(safeState.avatar, 'avatar');
+    const avatarData = await urlToDataURL(avatarUrl);
+    safeState.avatar = await compressDataUrl(avatarData, {
+      maxW: AVATAR_EXPORT_MAX_PX, maxH: AVATAR_EXPORT_MAX_PX, mime: 'image/jpeg', quality: 0.72
+    });
   }
 
+  // 3) Banner → dataURL (toujours inline pour fiabilité Gmail)
   if (/^data:/i.test(safeState.banner)) {
     safeState.banner = await compressDataUrl(safeState.banner, {
       maxW: BANNER_EXPORT_MAX_W, maxH: BANNER_EXPORT_MAX_H, mime: 'image/jpeg', quality: 0.72
     });
   } else {
-    safeState.banner = sanitizeSrcForEmail(safeState.banner, 'banner');
+    const bannerUrl = sanitizeSrcForEmail(safeState.banner, 'banner');
+    const bannerData = await urlToDataURL(bannerUrl);
+    safeState.banner = await compressDataUrl(bannerData, {
+      maxW: BANNER_EXPORT_MAX_W, maxH: BANNER_EXPORT_MAX_H, mime: 'image/jpeg', quality: 0.72
+    });
   }
 
-  // 3) icônes sociaux : forcer https + cache-buster
+  // 4) icônes sociaux : forcer https + cache-buster (restaurés ensuite)
   const _iconLinkedin = ICON_LINKEDIN_SRC;
   const _iconLemcal   = ICON_LEMCAL_SRC;
   ICON_LINKEDIN_SRC = sanitizeSrcForEmail(ICON_LINKEDIN_SRC || LINKEDIN_FALLBACK, 'linkedin');
   ICON_LEMCAL_SRC   = sanitizeSrcForEmail(ICON_LEMCAL_SRC   || LEMCAL_FALLBACK,   'lemcal');
 
-  // 4) build
+  // 5) build
   let html = buildEmailHTML(safeState, opts);
 
-  // 5) minify
+  // 6) minify
   html = minifyHtml(html);
 
-  // 6) sécurité : si on dépasse la limite, retirer la bannière en dernier recours
+  // 7) sécurité : si on dépasse la limite, retirer la bannière en dernier recours
   if (html.length > GMAIL_HTML_SOFT_LIMIT && (safeState.banner && state.bannerEnabled !== false)) {
-    const tmpState = { ...safeState };
-    const tmp = { ...state, bannerEnabled: false };
+    const tmp = { ...safeState, bannerEnabled: false };
     html = minifyHtml(buildEmailHTML(tmp, opts));
   }
 
-  // 7) restore icons
+  // 8) restore icons
   ICON_LINKEDIN_SRC = _iconLinkedin;
   ICON_LEMCAL_SRC   = _iconLemcal;
 
@@ -576,6 +617,7 @@ inputs.bannerFile.addEventListener('change', async (e) => {
 
 /* ===== Buttons ===== */
 btns.copyGmail.addEventListener('click', async () => {
+  // Pipeline d’export : inline avatar + bannière en data:, minify, puis copie HTML
   const htmlExport = await buildEmailHTMLForExportAsync(collectState(), { align: 'left' });
   const html = wrapForGmail(htmlExport);
   try { await copyHtmlToClipboard(html, ''); }
