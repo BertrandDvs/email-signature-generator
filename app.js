@@ -37,10 +37,10 @@ const BRAND_PROFILES = {
     },
     gradient: ['#0568CC','#54A9FF'],
     assets: {
-      logoLocal:   'icons/taplio-logo.png',
+      logoLocal:   'icons/taplio-logo.gif',
       avatarLocal: 'icons/taplio-avatar.png',
       bannerLocal: 'icons/taplio-banner.png',
-      logoPublic:   'taplio-logo.png',
+      logoPublic:   'taplio-logo.gif',
       avatarPublic: 'taplio-avatar.png',
       bannerPublic: 'taplio-banner.png',
       linkedinPublic: 'linkedin.png',
