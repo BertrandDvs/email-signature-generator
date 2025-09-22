@@ -50,7 +50,7 @@ const BRAND_PROFILES = {
 };
 
 /* ===== Public assets base (GitHub Pages) ===== */
-const PUBLIC_ASSET_BASE = 'https://bertranddvs.github.io/email-signature-generator/icons/';
+const PUBLIC_ASSET_BASE = `${location.origin}/icons/`;
 
 /* ===== State brand/theme (mutable) ===== */
 let CURRENT_BRAND = BRAND_PROFILES.lemlist; // défaut
