@@ -13,6 +13,64 @@ const SB = {
 const supabase = (SB.url && SB.anon) ? window.supabase.createClient(SB.url, SB.anon) : null;
 console.log('[SB CFG]', SB);
 
+/* ===== Image helpers (compression WebP) ===== */
+const AVATAR_MAX_SIDE = 600;            // px
+const BANNER_MAX_W    = 1200;           // px
+const BANNER_MAX_H    = 600;            // px
+const WEBP_QUALITY_AVATAR = 0.86;
+const WEBP_QUALITY_BANNER = 0.84;
+
+function loadImageFromFile(file){
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => { URL.revokeObjectURL(url); resolve(img); };
+    img.onerror = (e) => { URL.revokeObjectURL(url); reject(e); };
+    img.src = url;
+  });
+}
+function canvasToBlob(canvas, type, quality){
+  return new Promise(res => canvas.toBlob(b => res(b), type, quality));
+}
+async function compressImage(file, {maxW, maxH, quality=0.85, prefer='image/webp'}){
+  // Décode l’image
+  const img = await loadImageFromFile(file);
+  const inW = img.naturalWidth || img.width;
+  const inH = img.naturalHeight || img.height;
+
+  // Calcule dimensions cibles (contain)
+  let outW = inW, outH = inH;
+  if (maxW || maxH){
+    const rW = maxW ? maxW / inW : 1;
+    const rH = maxH ? maxH / inH : 1;
+    const ratio = Math.min(rW, rH, 1);  // jamais upscale
+    outW = Math.max(1, Math.round(inW * ratio));
+    outH = Math.max(1, Math.round(inH * ratio));
+  }
+
+  const canvas = document.createElement('canvas');
+  canvas.width = outW; canvas.height = outH;
+  const ctx = canvas.getContext('2d');
+  ctx.drawImage(img, 0, 0, outW, outH);
+
+  // Tente WebP → fallback JPEG si null (Safari très ancien / formats exotiques)
+  let blob = await canvasToBlob(canvas, prefer, quality);
+  let mime = prefer;
+  if (!blob) {
+    mime = 'image/jpeg';
+    blob = await canvasToBlob(canvas, mime, Math.min(0.9, quality + 0.05));
+  }
+  return { blob, width: outW, height: outH, mime };
+}
+
+function blobToFile(blob, filename){
+  try { return new File([blob], filename, { type: blob.type }); }
+  catch { // Safari iOS vieux
+    blob.name = filename;
+    return blob; // « pseudo File »
+  }
+}
+
 function slugifyFilename(name='asset'){
   return name.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'').slice(0,40) || 'asset';
 }
@@ -22,14 +80,16 @@ function fileExt(file){ return (file.name && file.name.match(/\.\w+$/) || [''])[
 async function uploadToSupabaseFolder(file, folderName, userHint='user') {
   if (!supabase) throw new Error('Supabase not configured');
 
+  // Autorisés
   const okTypes = ['image/jpeg','image/png','image/webp','image/gif'];
-  const MAX_MB = 5;
+  const MAX_MB = 8;
   if (!okTypes.includes(file.type)) throw new Error('Format invalide (jpg/png/webp/gif)');
   if (file.size > MAX_MB * 1024 * 1024) throw new Error(`Fichier trop lourd (> ${MAX_MB} Mo)`);
 
   const id = (crypto && crypto.randomUUID) ? crypto.randomUUID() : String(Date.now());
   const base = slugifyFilename(userHint || 'user');
-  const path = `${folderName}/${base}-${id}${fileExt(file)}`;
+  const ext  = (file.name && file.name.split('.').pop()) ? ('.' + file.name.split('.').pop()) : (file.type === 'image/webp' ? '.webp' : fileExt(file));
+  const path = `${folderName}/${base}-${id}${ext}`;
 
   console.log('[UPLOAD]', { bucket: SB.bucket, path, type: file.type, size: file.size });
 
@@ -37,7 +97,7 @@ async function uploadToSupabaseFolder(file, folderName, userHint='user') {
     .from(SB.bucket)
     .upload(path, file, {
       upsert: false,
-      cacheControl: '31536000', // 1 an
+      cacheControl: '31536000',
       contentType: file.type
     });
 
@@ -46,7 +106,17 @@ async function uploadToSupabaseFolder(file, folderName, userHint='user') {
 
   const pub = supabase.storage.from(SB.bucket).getPublicUrl(path);
   console.log('[PUBLIC URL]', pub);
-  return pub.data.publicUrl; // https public
+  return pub.data.publicUrl;
+}
+
+function showUploadError(kind, err){
+  const msg = (err && (err.message || err.error || err.msg)) ? String(err.message || err.error || err.msg) : String(err);
+  alert(
+    `Échec de l'hébergement de ${kind}.\n\n` +
+    `${msg}\n\n` +
+    `Vérifie: Storage bucket "${SB.bucket}" public, policies RLS pour "${kind === 'la bannière' ? 'banners/%' : 'avatars/%'}", et CORS (Settings → API).\n` +
+    `Regarde la console pour les logs détaillés.`
+  );
 }
 
 /* ============================================================================
@@ -100,7 +170,7 @@ const BRAND_PROFILES = {
 const PUBLIC_ASSET_BASE = 'https://bertranddvs.github.io/email-signature-generator/icons/';
 
 /* >>> Cache-buster global <<< */
-const ASSET_VERSION = '2025-09-22-01'; // incrémente quand tu pousses de nouvelles images
+const ASSET_VERSION = '2025-09-22-01';
 
 /* ===== State brand/theme (mutable) ===== */
 let CURRENT_BRAND = BRAND_PROFILES.lemlist; // défaut
@@ -109,17 +179,14 @@ let PUBLIC_ASSETS_CURRENT = mapPublicAssets(CURRENT_BRAND);
 
 /* ===== Colors (fallbacks SVG) ===== */
 const LINKEDIN_FALLBACK = rectSVG(40, 40, '#0A66C2', 'in');
-const LEMCAL_FALLBACK   = rectSVG(40, 40, '#316BFF', 'cal'); // fallback neutre
+const LEMCAL_FALLBACK   = rectSVG(40, 40, '#316BFF', 'cal');
 const PLACEHOLDER_AVATAR = rectSVG(89, 89, '#E9EEF2', 'Photo');
 const PLACEHOLDER_BANNER = rectSVG(600, 120, '#DDEEE8', 'Banner');
 
 /* ===== Local assets (preview / app) ===== */
-const ASSETS = {
-  linkedin: 'icons/linkedin.png',
-  lemcal:   'icons/lemcal.png'
-};
+const ASSETS = { linkedin: 'icons/linkedin.png', lemcal: 'icons/lemcal.png' };
 
-/* ===== Image sources (no web fetch) — seront remplacées via applyBrand() ===== */
+/* ===== Image sources (no web fetch) ===== */
 let LOGO_SRC           = CURRENT_BRAND.assets.logoLocal;
 let ICON_LINKEDIN_SRC  = ASSETS.linkedin;
 let ICON_LEMCAL_SRC    = ASSETS.lemcal;
@@ -144,21 +211,9 @@ const inputs = {
   bannerToggle: byId('bannerToggle'),
 };
 
-const fileBtns = {
-  avatar: byId('avatarBtn'),
-  banner: byId('bannerBtn'),
-};
-
-const els = {
-  previewCard: byId('previewCard'),
-  preview: byId('signaturePreview'),
-};
-
-const btns = {
-  copyGmail: byId('copyGmail'),
-  openGmail: byId('openGmail'),
-  reset: byId('reset'),
-};
+const fileBtns = { avatar: byId('avatarBtn'), banner: byId('bannerBtn') };
+const els = { previewCard: byId('previewCard'), preview: byId('signaturePreview') };
+const btns = { copyGmail: byId('copyGmail'), openGmail: byId('openGmail'), reset: byId('reset') };
 
 /* Expose pour les onclick HTML */
 window.avatarFile = inputs.avatarFile;
@@ -190,9 +245,7 @@ function toTelHref(raw='') {
   return `tel:${plus}${digits}`;
 }
 function escapeHtml(str=''){
-  return str.replace(/[&<>"']/g, s => ({
-    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
-  }[s]));
+  return str.replace(/[&<>"']/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[s]));
 }
 function wrapForGmail(innerHTML){
   return `<!-- signature --><div style="text-align:left">${innerHTML}</div>`;
@@ -241,15 +294,12 @@ function mapPublicAssets(profile){
   };
 }
 
-/* ===== Sanitize src for export (force HTTPS public GitHub Pages) ===== */
+/* ===== Sanitize src for export ===== */
 function sanitizeSrcForEmail(src, kind) {
   const q = ASSET_VERSION ? `?v=${encodeURIComponent(ASSET_VERSION)}` : '';
-
-  // URL absolue déjà https (laisse passer Supabase & autres)
   if (src && /^https:\/\//i.test(src)) {
     try {
       const u = new URL(src);
-      // Si GitHub Pages et pas déjà versionné → ajoute v=...
       if (u.hostname.includes('github.io') && ASSET_VERSION && !u.searchParams.has('v')) {
         u.searchParams.set('v', ASSET_VERSION);
         return u.toString();
@@ -257,11 +307,7 @@ function sanitizeSrcForEmail(src, kind) {
     } catch {}
     return src;
   }
-
-  // Mapping "kind" → URL publique versionnée (GitHub Pages)
   if (kind && PUBLIC_ASSETS_CURRENT[kind]) return PUBLIC_ASSETS_CURRENT[kind];
-
-  // Sinon: reconstruit à partir du nom de fichier
   const file = String(src || '').split('/').pop();
   return PUBLIC_ASSET_BASE + file + q;
 }
@@ -296,7 +342,7 @@ function collectState() {
   };
 }
 
-/* ===== Email HTML (utilise THEME dynamique) ===== */
+/* ===== Email HTML ===== */
 function buildEmailHTML(state, { align = 'center' } = {}) {
   const {
     name, role, email, phone,
@@ -517,7 +563,7 @@ function applyBrand(key){
 }
 
 /* ===== File inputs ===== */
-/* AVATAR: preview immédiate + upload Supabase → URL publique */
+/* AVATAR: preview → compression WebP → upload Supabase → URL publique */
 inputs.avatarFile.addEventListener('change', async (e) => {
   const f = e.target.files?.[0];
 
@@ -529,24 +575,29 @@ inputs.avatarFile.addEventListener('change', async (e) => {
     return;
   }
 
-  // 1) Preview instantanée
+  // 1) Preview immédiate (fichier original)
   imageCache.avatar = await fileToDataURL(f);
   fileBtns.avatar.textContent = f.name;
   fileBtns.avatar.classList.add('used');
   renderPreview();
 
-  // 2) Upload Supabase → remplace par URL publique
+  // 2) Compression WebP
   try {
-    const hostedUrl = await uploadToSupabaseFolder(f, SB.folder, inputs.name?.value || 'user');
+    const { blob, mime } = await compressImage(f, { maxW: AVATAR_MAX_SIDE, maxH: AVATAR_MAX_SIDE, quality: WEBP_QUALITY_AVATAR, prefer: 'image/webp' });
+    const newName = `${slugifyFilename(inputs.name?.value || 'user')}-avatar.webp`;
+    const webpFile = blobToFile(blob, newName);
+
+    // 3) Upload → remplace preview par URL publique
+    const hostedUrl = await uploadToSupabaseFolder(webpFile, SB.folder, inputs.name?.value || 'user');
     imageCache.avatar = hostedUrl;   // HTTPS public
     renderPreview();
   } catch (err) {
-    console.error('[Supabase upload failed]', err);
-    alert("Échec de l'hébergement de la photo. La signature utilisera l'image locale (qui ne s'affichera pas dans Gmail).");
+    console.error('[Avatar compress/upload failed]', err);
+    showUploadError('la photo', err);
   }
 });
 
-/* BANNER: preview immédiate + upload Supabase → URL publique */
+/* BANNER: preview → compression WebP → upload Supabase → URL publique */
 inputs.bannerFile.addEventListener('change', async (e) => {
   const f = e.target.files?.[0];
 
@@ -558,24 +609,25 @@ inputs.bannerFile.addEventListener('change', async (e) => {
     return;
   }
 
-  // 1) Preview instantanée
+  // 1) Preview immédiate (original)
   imageCache.banner = await fileToDataURL(f);
   fileBtns.banner.textContent = f.name;
   fileBtns.banner.classList.add('used');
   renderPreview();
 
-  // 2) Upload Supabase → remplace par URL publique
+  // 2) Compression WebP (largeur max 1200, hauteur max 600)
   try {
-    const hostedUrl = await uploadToSupabaseFolder(
-      f,
-      SB.bannersFolder,
-      (inputs.name?.value || 'user') + '-banner'
-    );
+    const { blob, mime } = await compressImage(f, { maxW: BANNER_MAX_W, maxH: BANNER_MAX_H, quality: WEBP_QUALITY_BANNER, prefer: 'image/webp' });
+    const newName = `${slugifyFilename(inputs.name?.value || 'user')}-banner.webp`;
+    const webpFile = blobToFile(blob, newName);
+
+    // 3) Upload → remplace preview par URL publique
+    const hostedUrl = await uploadToSupabaseFolder(webpFile, SB.bannersFolder, (inputs.name?.value || 'user') + '-banner');
     imageCache.banner = hostedUrl;   // HTTPS public
     renderPreview();
   } catch (err) {
-    console.error('[Supabase banner upload failed]', err);
-    alert("Échec de l'hébergement de la bannière. La signature utilisera l'image locale (qui ne s'affichera pas dans Gmail).");
+    console.error('[Banner compress/upload failed]', err);
+    showUploadError('la bannière', err);
   }
 });
 
@@ -607,16 +659,14 @@ btns.reset.addEventListener('click', () => {
   fileBtns.banner.textContent = 'Upload banner';
   fileBtns.avatar.classList.remove('used');
   fileBtns.banner.classList.remove('used');
-  if (inputs.bannerToggle) inputs.bannerToggle.checked = true; // cohérent avec défaut
+  if (inputs.bannerToggle) inputs.bannerToggle.checked = true;
   renderPreview();
 });
 
 /* ===== Init ===== */
 window.addEventListener('load', () => {
-  // Initial brand (lemlist)
   applyBrand('lemlist');
 
-  // Wire brand toggle
   document.querySelectorAll('.brand-switch .seg').forEach(btn => {
     btn.addEventListener('click', (e) => {
       const k = e.currentTarget.dataset.brand;
