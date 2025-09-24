@@ -12,13 +12,13 @@
     <h1>Email Signature Generator</h1>
     <div class="actions">
       <div class="brand-switch" role="tablist" aria-label="Brand switch">
-  <button class="seg is-active" id="brandLemlist" data-brand="lemlist" role="tab" aria-selected="true" title="lemlist">
-    <img src="icons/lemlist-app.png" alt="lemlist" width="24" height="24" />
-  </button>
-  <button class="seg" id="brandTaplio" data-brand="taplio" role="tab" aria-selected="false" title="Taplio">
-    <img src="icons/taplio-app.png" alt="Taplio" width="24" height="24" />
-  </button>
-</div>
+        <button class="seg is-active" id="brandLemlist" data-brand="lemlist" role="tab" aria-selected="true" title="lemlist">
+          <img src="icons/lemlist-app.png" alt="lemlist" width="24" height="24" />
+        </button>
+        <button class="seg" id="brandTaplio" data-brand="taplio" role="tab" aria-selected="false" title="Taplio">
+          <img src="icons/taplio-app.png" alt="Taplio" width="24" height="24" />
+        </button>
+      </div>
       <button class="btnprim" id="copyGmail">Copy for Gmail</button>
       <button class="btn ghost" id="openGmail" title="Open Gmail Settings">Open Gmail</button>
       <button class="btn" id="reset">Reset</button>
@@ -61,7 +61,7 @@
             <input type="tel" id="phone" value="+33 6 66 66 66 66" placeholder="+33 6 66 66 66 66" />
           </div>
 
-          <!-- Réseaux avec vrais toggles au-dessus -->
+          <!-- Réseaux -->
           <div class="row social-row">
             <div class="social-item">
               <div class="social-head">
@@ -86,7 +86,7 @@
             </div>
           </div>
 
-          <!-- Uploads sur UNE ligne (bouton = nom du fichier si sélectionné) -->
+          <!-- Uploads -->
           <div class="row grid-2">
             <div>
               <label>Photo</label>
@@ -96,20 +96,19 @@
               </div>
             </div>
             <div>
-  <div class="social-head">
-    <label>Banner (500x160)</label>
-    <label class="switch">
-      <input type="checkbox" id="bannerToggle" checked />
-      <span class="slider"></span>
-    </label>
-  </div>
+              <div class="social-head">
+                <label>Banner (500x160)</label>
+                <label class="switch">
+                  <input type="checkbox" id="bannerToggle" checked />
+                  <span class="slider"></span>
+                </label>
+              </div>
 
-  <div class="file-input">
-    <input type="file" id="bannerFile" accept="image/*" />
-    <button type="button" class="btn file-btn" id="bannerBtn" onclick="bannerFile.click()">Upload banner</button>
-  </div>
-</div>
-
+              <div class="file-input">
+                <input type="file" id="bannerFile" accept="image/*" />
+                <button type="button" class="btn file-btn" id="bannerBtn" onclick="bannerFile.click()">Upload banner</button>
+              </div>
+            </div>
           </div>
         </div>
       </form>
@@ -117,16 +116,27 @@
   </main>
 
   <section class="panel preview">
-  <div class="preview-inner" id="previewInner">
-    <div class="signature-base" id="signatureBase">
-      <div class="preview-card" id="previewCard">
-        <div id="signaturePreview"></div>
+    <div class="preview-inner" id="previewInner">
+      <div class="signature-base" id="signatureBase">
+        <div class="preview-card" id="previewCard">
+          <div id="signaturePreview"></div>
+        </div>
+        <!-- Badge décoratif (uniquement sur le site) -->
+        <img src="icons/badge.png" alt="Badge" class="site-badge" />
       </div>
-      <!-- Badge décoratif (uniquement sur le site) -->
-      <img src="icons/badge.png" alt="Badge" class="site-badge" />
     </div>
-  </div>
-</section>
+  </section>
+
+  <!-- Supabase client + config (AJOUT) -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    window.SUPABASE_CFG = {
+      url: 'https://gdkuxrrxwnufdbpqooim.supabase.co',
+      anon: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imdka3V4cnJ4d251ZmRicHFvb2ltIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg3Mjk3MTYsImV4cCI6MjA3NDMwNTcxNn0.ZGKsAy-76dBUtnOtqEpccaRvcKejA0VIpQl8owNI9VU',
+      bucket: 'signatures',
+      folder: 'avatars'
+    };
+  </script>
 
   <script src="app.js"></script>
 </body>
