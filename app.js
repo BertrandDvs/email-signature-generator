@@ -3,7 +3,7 @@ const BASE_PREVIEW_SCALE = 0.92;
 const PREVIEW_MAX_WIDTH = 500;
 
 /* ============================================================================
-   Brand profiles
+   Brand profiles (couleurs, site, assets)
    ========================================================================== */
 const BRAND_PROFILES = {
   lemlist: {
@@ -15,14 +15,17 @@ const BRAND_PROFILES = {
     },
     gradient: ['#316BFF','#134CDD'],
     assets: {
-      logoLocal: 'icons/logo.gif',
+      // locaux (preview) :
+      logoLocal:   'icons/logo.gif',
       avatarLocal: 'icons/avatar-placeholder.png',
       bannerLocal: 'icons/banner-placeholder.png',
-      logoPublic: 'logo.gif',
+      // publics (GitHub Pages) :
+      logoPublic:   'logo.gif',
       avatarPublic: 'avatar-placeholder.png',
       bannerPublic: 'banner-placeholder.png',
+      // icônes sociaux (communs ici)
       linkedinPublic: 'linkedin.png',
-      lemcalPublic: 'lemcal.png'
+      lemcalPublic:   'lemcal.png'
     }
   },
   taplio: {
@@ -34,48 +37,52 @@ const BRAND_PROFILES = {
     },
     gradient: ['#0568CC','#54A9FF'],
     assets: {
-      logoLocal: 'icons/taplio-logo.gif',
+      logoLocal:   'icons/taplio-logo.gif',
       avatarLocal: 'icons/taplio-avatar.png',
       bannerLocal: 'icons/taplio-banner.png',
-      logoPublic: 'taplio-logo.gif',
+      logoPublic:   'taplio-logo.gif',
       avatarPublic: 'taplio-avatar.png',
       bannerPublic: 'taplio-banner.png',
       linkedinPublic: 'linkedin.png',
-      lemcalPublic: 'lemcal.png'
+      lemcalPublic:   'lemcal.png'
     }
   }
 };
 
-/* ===== Public assets base (dynamique, support custom domain) ===== */
-// const PUBLIC_ASSET_BASE = 'https://bertranddvs.github.io/email-signature-generator/icons/';
-const PUBLIC_ASSET_BASE = new URL('./icons/', location.href).href;
+/* ===== Public assets base (GitHub Pages) ===== */
+const PUBLIC_ASSET_BASE = 'https://bertranddvs.github.io/email-signature-generator/icons/';
 
-/* ===== State brand/theme ===== */
-let CURRENT_BRAND = BRAND_PROFILES.lemlist;
+/* >>> Cache-buster global <<< */
+const ASSET_VERSION = '2025-09-22-01'; // ← incrémente ce tag quand tu pousses de nouvelles images
+
+/* ===== State brand/theme (mutable) ===== */
+let CURRENT_BRAND = BRAND_PROFILES.lemlist; // défaut
 let THEME = { colors: CURRENT_BRAND.colors, site: CURRENT_BRAND.site };
 let PUBLIC_ASSETS_CURRENT = mapPublicAssets(CURRENT_BRAND);
 
-/* ===== Fallbacks / placeholders ===== */
+/* ===== Colors (fallbacks SVG) ===== */
 const LINKEDIN_FALLBACK = rectSVG(40, 40, '#0A66C2', 'in');
-const LEMCAL_FALLBACK   = rectSVG(40, 40, '#316BFF', 'cal');
-const PLACEHOLDER_AVATAR= rectSVG(89, 89, '#E9EEF2', 'Photo');
-const PLACEHOLDER_BANNER= rectSVG(600, 120, '#DDEEE8', 'Banner');
+const LEMCAL_FALLBACK   = rectSVG(40, 40, '#316BFF', 'cal'); // fallback neutre
+const PLACEHOLDER_AVATAR = rectSVG(89, 89, '#E9EEF2', 'Photo');
+const PLACEHOLDER_BANNER = rectSVG(600, 120, '#DDEEE8', 'Banner');
 
-/* ===== Local icons ===== */
-const ASSETS = { linkedin: 'icons/linkedin.png', lemcal: 'icons/lemcal.png' };
+/* ===== Local assets (preview / app) ===== */
+const ASSETS = {
+  linkedin: 'icons/linkedin.png',
+  lemcal:   'icons/lemcal.png'
+};
 
-/* ===== Image sources ===== */
+/* ===== Image sources (no web fetch) — seront remplacées via applyBrand() ===== */
 let LOGO_SRC           = CURRENT_BRAND.assets.logoLocal;
 let ICON_LINKEDIN_SRC  = ASSETS.linkedin;
 let ICON_LEMCAL_SRC    = ASSETS.lemcal;
 let AVATAR_DEFAULT_SRC = CURRENT_BRAND.assets.avatarLocal;
 let BANNER_DEFAULT_SRC = CURRENT_BRAND.assets.bannerLocal;
 
-/* ===== DOM helpers ===== */
-const $    = (sel) => document.querySelector(sel);
-const byId = (id)  => document.getElementById(id);
+/* ===== DOM ===== */
+const $ = (sel) => document.querySelector(sel);
+const byId = (id) => document.getElementById(id);
 
-/* ===== Inputs ===== */
 const inputs = {
   name: byId('name'),
   role: byId('role'),
@@ -86,14 +93,29 @@ const inputs = {
   lemcal: byId('lemcal'),
   lemcalToggle: byId('lemcalToggle'),
   avatarFile: byId('avatarFile'),
-  avatarUrl: byId('avatarUrl'), // <-- NOUVEAU : URL https pour export
-  bannerToggle: byId('bannerToggle')
+  bannerFile: byId('bannerFile'),
+  bannerToggle: byId('bannerToggle'), // ← nouveau
 };
-window.avatarFile = inputs.avatarFile;
 
-/* Buttons & containers */
-const els  = { previewCard: byId('previewCard'), preview: byId('signaturePreview') };
-const btns = { copyGmail: byId('copyGmail'), openGmail: byId('openGmail') };
+const fileBtns = {
+  avatar: byId('avatarBtn'),
+  banner: byId('bannerBtn'),
+};
+
+const els = {
+  previewCard: byId('previewCard'),
+  preview: byId('signaturePreview'),
+};
+
+const btns = {
+  copyGmail: byId('copyGmail'),
+  openGmail: byId('openGmail'),
+  reset: byId('reset'),
+};
+
+/* Expose pour les onclick HTML */
+window.avatarFile = inputs.avatarFile;
+window.bannerFile = inputs.bannerFile;
 
 /* ===== Utils ===== */
 function rectSVG(w, h, color, label) {
@@ -121,7 +143,9 @@ function toTelHref(raw='') {
   return `tel:${plus}${digits}`;
 }
 function escapeHtml(str=''){
-  return str.replace(/[&<>"']/g, s => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[s]));
+  return str.replace(/[&<>"']/g, s => ({
+    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+  }[s]));
 }
 function wrapForGmail(innerHTML){
   return `<!-- signature --><div style="text-align:left">${innerHTML}</div>`;
@@ -160,31 +184,39 @@ function showCopied(btn, label = 'Copied') {
 
 /* ===== Public assets mapping ===== */
 function mapPublicAssets(profile){
+  const q = ASSET_VERSION ? `?v=${encodeURIComponent(ASSET_VERSION)}` : '';
   return {
-    logo:     PUBLIC_ASSET_BASE + profile.assets.logoPublic,
-    avatar:   PUBLIC_ASSET_BASE + profile.assets.avatarPublic,
-    banner:   PUBLIC_ASSET_BASE + profile.assets.bannerPublic,
-    linkedin: PUBLIC_ASSET_BASE + profile.assets.linkedinPublic,
-    lemcal:   PUBLIC_ASSET_BASE + profile.assets.lemcalPublic
+    logo:     PUBLIC_ASSET_BASE + profile.assets.logoPublic     + q,
+    avatar:   PUBLIC_ASSET_BASE + profile.assets.avatarPublic   + q,
+    banner:   PUBLIC_ASSET_BASE + profile.assets.bannerPublic   + q,
+    linkedin: PUBLIC_ASSET_BASE + profile.assets.linkedinPublic + q,
+    lemcal:   PUBLIC_ASSET_BASE + profile.assets.lemcalPublic   + q
   };
 }
 
-/* ===== Helpers ===== */
-function isHttpsUrl(u=''){ try { const {protocol} = new URL(u); return protocol === 'https:'; } catch { return false; } }
-function isDataUrl(u=''){ return typeof u === 'string' && u.startsWith('data:'); }
+/* ===== Sanitize src for export (force HTTPS public GitHub Pages) ===== */
+function sanitizeSrcForEmail(src, kind) {
+  const q = ASSET_VERSION ? `?v=${encodeURIComponent(ASSET_VERSION)}` : '';
 
-/* ===== Sanitize src pour export (avec override avatarUrl) ===== */
-function sanitizeSrcForEmail(src, kind, overrides = {}) {
-  // Si une URL https explicite est fournie (ex: avatarUrl), on la privilégie
-  if (kind === 'avatar' && overrides.avatarUrl && isHttpsUrl(overrides.avatarUrl)) {
-    return overrides.avatarUrl;
+  // URL absolue déjà https
+  if (src && /^https:\/\//i.test(src)) {
+    try {
+      const u = new URL(src);
+      // Si c'est servi depuis GitHub Pages et pas déjà versionné, on ajoute v=...
+      if (u.hostname.includes('github.io') && ASSET_VERSION && !u.searchParams.has('v')) {
+        u.searchParams.set('v', ASSET_VERSION);
+        return u.toString();
+      }
+    } catch {}
+    return src; // autre domaine : on ne touche pas
   }
-  // Si déjà https, ok
-  if (src && /^https:\/\//i.test(src)) return src;
-  // Sinon on mappe sur les assets publics connus
+
+  // Mapping "kind" → URL publique versionnée
   if (kind && PUBLIC_ASSETS_CURRENT[kind]) return PUBLIC_ASSETS_CURRENT[kind];
+
+  // Sinon, on reconstruit à partir du nom de fichier
   const file = String(src || '').split('/').pop();
-  return PUBLIC_ASSET_BASE + file;
+  return PUBLIC_ASSET_BASE + file + q;
 }
 
 /* ===== State ===== */
@@ -192,7 +224,6 @@ const imageCache = {
   avatar: AVATAR_DEFAULT_SRC || PLACEHOLDER_AVATAR,
   banner: BANNER_DEFAULT_SRC || PLACEHOLDER_BANNER,
 };
-
 function collectState() {
   const name = inputs.name.value.trim();
   const role = inputs.role.value.trim();
@@ -207,23 +238,26 @@ function collectState() {
 
   const bannerEnabled = !!(inputs.bannerToggle ? inputs.bannerToggle.checked : true);
 
-  const avatarUrl = inputs.avatarUrl.value.trim(); // <-- nouveau
-
   return {
     name, role, email, phone,
     linkedin, linkedinEnabled,
     lemcal, lemcalEnabled,
     avatar: imageCache.avatar,
-    avatarUrl, // pour l’export
     logo: LOGO_SRC || rectSVG(100, 28, THEME.colors.accent, CURRENT_BRAND.key),
     banner: imageCache.banner,
     bannerEnabled,
   };
 }
 
-/* ===== Email HTML ===== */
+/* ===== Email HTML (utilise THEME dynamique) ===== */
 function buildEmailHTML(state, { align = 'center' } = {}) {
-  const { name, role, email, phone, linkedin, linkedinEnabled, lemcal, lemcalEnabled, avatar, logo, banner, bannerEnabled } = state;
+  const {
+    name, role, email, phone,
+    linkedin, linkedinEnabled,
+    lemcal, lemcalEnabled,
+    avatar, logo, banner, bannerEnabled
+  } = state;
+
   const C = THEME.colors;
   const SITE = THEME.site;
 
@@ -242,10 +276,12 @@ function buildEmailHTML(state, { align = 'center' } = {}) {
 
   const rightIcons = (linkedinEnabled || lemcalEnabled) ? `
     <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="white-space:nowrap; font-size:0; line-height:0;">
-      <tbody><tr>
-        ${linkedinEnabled ? `<td style="padding-left:12px; vertical-align:middle;">${linkedinCell}</td>` : ''}
-        ${lemcalEnabled ? `<td style="padding-left:12px; vertical-align:middle;">${lemcalCell}</td>` : ''}
-      </tr></tbody>
+      <tbody>
+        <tr>
+          ${linkedinEnabled ? `<td style="padding-left:12px; vertical-align:middle;">${linkedinCell}</td>` : ''}
+          ${lemcalEnabled ? `<td style="padding-left:12px; vertical-align:middle;">${lemcalCell}</td>` : ''}
+        </tr>
+      </tbody>
     </table>` : '';
 
   const bannerBlock = bannerEnabled ? `
@@ -258,111 +294,116 @@ function buildEmailHTML(state, { align = 'center' } = {}) {
 
   const contentRows = `
     <!-- HEADER -->
-    <tr><td>
-      <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="width:100%; font-size:0;">
-        <tbody>
-          <tr>
-            <td valign="top" style="vertical-align:top; font-size:16px;">
-              <div style="font-size:18px; font-weight:800; color:${C.name}; line-height:1.2;">${escapeHtml(name)}</div>
-              <div style="font-size:14px; color:${C.role}; line-height:1.5;">${escapeHtml(role)}</div>
-            </td>
-            <td valign="top" align="right" style="text-align:right; white-space:nowrap;">
-              <a href="https://${SITE}" target="_blank" style="text-decoration:none; display:inline-block;">
-                <img src="${logo}" alt="Logo" style="display:block; height:28px; border:0; outline:none; text-decoration:none;" />
-              </a>
-            </td>
-          </tr>
-          <tr><td colspan="2" style="padding-top:12px;"><div style="height:1px; background:${C.separator};"></div></td></tr>
-        </tbody>
-      </table>
-    </td></tr>
+    <tr>
+      <td>
+        <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="width:100%; font-size:0;">
+          <tbody>
+            <tr>
+              <td valign="top" style="vertical-align:top; font-size:16px;">
+                <div style="font-size:18px; font-weight:800; color:${C.name}; line-height:1.2;">${escapeHtml(name)}</div>
+                <div style="font-size:14px; color:${C.role}; line-height:1.5;">${escapeHtml(role)}</div>
+              </td>
+              <td valign="top" align="right" style="text-align:right; white-space:nowrap;">
+                <a href="https://${SITE}" target="_blank" style="text-decoration:none; display:inline-block;">
+                  <img src="${logo}" alt="Logo" style="display:block; height:28px; border:0; outline:none; text-decoration:none;" />
+                </a>
+              </td>
+            </tr>
+            <tr>
+              <td colspan="2" style="padding-top:12px;">
+                <div style="height:1px; background:${C.separator};"></div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </td>
+    </tr>
 
     <!-- INFOS -->
-    <tr><td style="padding-top:16px;">
-      <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="width:100%;">
-        <tbody>
-          <tr>
-            <td valign="middle">
-              <table role="presentation" cellpadding="0" cellspacing="0" border="0">
-                <tbody>
-                  <tr>
-                    <td valign="middle">
-                      <img src="${avatar}" width="89" height="89" alt="${escapeHtml(name)}" style="display:block; border-radius:6px;" />
-                    </td>
-                    <td style="width:16px;"></td>
-                    <td valign="middle">
-                      <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="font-size:13px; color:${C.muted}; line-height:1.7;">
-                        <tbody>
-                          ${phoneRow}
-                          ${emailRow}
-                          <tr><td><a href="https://${SITE}" style="color:${C.site}; text-decoration:none;">${SITE}</a></td></tr>
-                        </tbody>
-                      </table>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </td>
-            <td valign="middle" align="right" style="white-space:nowrap; padding-left:12px;">
-              ${rightIcons}
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </td></tr>
+    <tr>
+      <td style="padding-top:16px;">
+        <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="width:100%;">
+          <tbody>
+            <tr>
+              <td valign="middle">
+                <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+                  <tbody>
+                    <tr>
+                      <td valign="middle">
+                        <img src="${avatar}" width="89" height="89" alt="${escapeHtml(name)}" style="display:block; border-radius:6px;" />
+                      </td>
+                      <td style="width:16px;"></td>
+                      <td valign="middle">
+                        <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="font-size:13px; color:${C.muted}; line-height:1.7;">
+                          <tbody>
+                            ${phoneRow}
+                            ${emailRow}
+                            <tr><td><a href="https://${SITE}" style="color:${C.site}; text-decoration:none;">${SITE}</a></td></tr>
+                          </tbody>
+                        </table>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </td>
+              <td valign="middle" align="right" style="white-space:nowrap; padding-left:12px;">
+                ${rightIcons}
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </td>
+    </tr>
 
     ${bannerBlock}
   `;
 
   if (align === 'left') {
     return `
-      <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="border-collapse:collapse; mso-table-lspace:0pt; mso-table-rspace:0pt;">
-        <tbody><tr>
-          <td align="left" style="padding:0; margin:0;">
-            <!--[if mso]><table role="presentation" cellpadding="0" cellspacing="0" border="0" width="${PREVIEW_MAX_WIDTH}"><tr><td><![endif]-->
-            <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="left" style="border-collapse:collapse; mso-table-lspace:0pt; mso-table-rspace:0pt; color:${C.text}; font-family:Arial,Helvetica,sans-serif; width:100%; max-width:${PREVIEW_MAX_WIDTH}px;">
-              <tbody>${contentRows}</tbody>
-            </table>
-            <!--[if mso]></td></tr></table><![endif]-->
-          </td>
-        </tr></tbody>
+<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="border-collapse:collapse; mso-table-lspace:0pt; mso-table-rspace:0pt;">
+  <tbody><tr>
+    <td align="left" style="padding:0; margin:0;">
+      <!--[if mso]><table role="presentation" cellpadding="0" cellspacing="0" border="0" width="${PREVIEW_MAX_WIDTH}"><tr><td><![endif]-->
+      <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="left"
+             style="border-collapse:collapse; mso-table-lspace:0pt; mso-table-rspace:0pt;
+                    color:${C.text}; font-family:Arial,Helvetica,sans-serif;
+                    width:100%; max-width:${PREVIEW_MAX_WIDTH}px;">
+        <tbody>${contentRows}</tbody>
       </table>
-    `.trim();
+      <!--[if mso]></td></tr></table><![endif]-->
+    </td>
+  </tr></tbody>
+</table>`.trim();
   }
 
   return `
-    <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center" style="border-collapse:collapse; mso-table-lspace:0pt; mso-table-rspace:0pt; color:${C.text}; font-family:Arial,Helvetica,sans-serif; max-width:${PREVIEW_MAX_WIDTH}px; width:100%;">
-      <tbody>${contentRows}</tbody>
-    </table>
-  `.trim();
+<table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center"
+       style="border-collapse:collapse; mso-table-lspace:0pt; mso-table-rspace:0pt;
+              color:${C.text}; font-family:Arial,Helvetica,sans-serif;
+              max-width:${PREVIEW_MAX_WIDTH}px; width:100%;">
+  <tbody>${contentRows}</tbody>
+</table>`.trim();
 }
 
-/* ===== Export HTML (force URLs publiques + override avatarUrl) ===== */
+/* ===== Variante export (force URLs publiques) ===== */
 function buildEmailHTMLForExport(state, opts) {
-  const overrides = { avatarUrl: state.avatarUrl };
   const safeState = {
     ...state,
-    logo:   sanitizeSrcForEmail(state.logo,   'logo',   overrides),
-    // Si avatar est un data: et qu'on a une URL https fournie, on l'utilise. Sinon, mapping public (placeholder).
-    avatar: sanitizeSrcForEmail(state.avatar, 'avatar', overrides),
-    banner: sanitizeSrcForEmail(state.banner, 'banner', overrides),
+    logo:   sanitizeSrcForEmail(state.logo,   'logo'),
+    avatar: sanitizeSrcForEmail(state.avatar, 'avatar'),
+    banner: sanitizeSrcForEmail(state.banner, 'banner'),
   };
 
   const _iconLinkedin = ICON_LINKEDIN_SRC;
   const _iconLemcal   = ICON_LEMCAL_SRC;
-  ICON_LINKEDIN_SRC   = sanitizeSrcForEmail(ICON_LINKEDIN_SRC || LINKEDIN_FALLBACK, 'linkedin', overrides);
-  ICON_LEMCAL_SRC     = sanitizeSrcForEmail(ICON_LEMCAL_SRC   || LEMCAL_FALLBACK,   'lemcal',   overrides);
+
+  ICON_LINKEDIN_SRC = sanitizeSrcForEmail(ICON_LINKEDIN_SRC || LINKEDIN_FALLBACK, 'linkedin');
+  ICON_LEMCAL_SRC   = sanitizeSrcForEmail(ICON_LEMCAL_SRC   || LEMCAL_FALLBACK,   'lemcal');
 
   const html = buildEmailHTML(safeState, opts);
 
-  // restore
   ICON_LINKEDIN_SRC = _iconLinkedin;
   ICON_LEMCAL_SRC   = _iconLemcal;
-
-  // Petit warning si on a dû retomber sur le placeholder
-  if (isDataUrl(state.avatar) && !isHttpsUrl(state.avatarUrl)) {
-    console.warn('Avertissement: l’avatar uploadé est en data: ; fournissez une Avatar URL (https) pour l’export Gmail, sinon le placeholder est utilisé.');
-  }
 
   return html;
 }
@@ -370,7 +411,7 @@ function buildEmailHTMLForExport(state, opts) {
 /* ===== Preview renderer ===== */
 function renderPreview() {
   const state = collectState();
-  els.preview.innerHTML = buildEmailHTML(state, { align: 'center' });
+  els.preview.innerHTML = buildEmailHTML(state, { align: 'center' }); // preview centrée
 
   const card = els.previewCard;
   card.style.maxWidth = PREVIEW_MAX_WIDTH + 'px';
@@ -391,87 +432,97 @@ function renderPreview() {
 /* ===== Brand switching ===== */
 function applyBrand(key){
   const prof = BRAND_PROFILES[key] || BRAND_PROFILES.lemlist;
-
   CURRENT_BRAND = prof;
   THEME = { colors: prof.colors, site: prof.site };
   PUBLIC_ASSETS_CURRENT = mapPublicAssets(prof);
 
+  // Set CSS variables (accent + gradient)
   document.documentElement.style.setProperty('--accent', prof.colors.accent);
   document.documentElement.style.setProperty('--grad-start', prof.gradient[0]);
   document.documentElement.style.setProperty('--grad-end',   prof.gradient[1]);
 
+  // Set local defaults
   LOGO_SRC           = prof.assets.logoLocal;
   AVATAR_DEFAULT_SRC = prof.assets.avatarLocal;
   BANNER_DEFAULT_SRC = prof.assets.bannerLocal;
 
-  // Reset preview images à la brand
+  // Reset uploads à la brand
   inputs.avatarFile.value = '';
+  inputs.bannerFile.value = '';
   imageCache.avatar = AVATAR_DEFAULT_SRC || PLACEHOLDER_AVATAR;
   imageCache.banner = BANNER_DEFAULT_SRC || PLACEHOLDER_BANNER;
+  fileBtns.avatar.textContent = 'Upload photo';
+  fileBtns.banner.textContent = 'Upload banner';
+  fileBtns.avatar.classList.remove('used');
+  fileBtns.banner.classList.remove('used');
 
-  // UI état du switch
+  // Toggle UI state
   const btnL = byId('brandLemlist');
   const btnT = byId('brandTaplio');
   if (btnL && btnT){
     btnL.classList.toggle('is-active', key === 'lemlist');
     btnT.classList.toggle('is-active', key === 'taplio');
     btnL.setAttribute('aria-selected', key === 'lemlist' ? 'true':'false');
-    btnT.setAttribute('aria-selected', key === 'taplio'  ? 'true':'false');
+    btnT.setAttribute('aria-selected', key === 'taplio' ? 'true':'false');
   }
 
   renderPreview();
 }
 
-/* ===== File input: avatar (preview) ===== */
+/* ===== File inputs ===== */
 inputs.avatarFile.addEventListener('change', async (e) => {
   const f = e.target.files?.[0];
   imageCache.avatar = f ? await fileToDataURL(f) : (AVATAR_DEFAULT_SRC || PLACEHOLDER_AVATAR);
-  const avatarBtn = byId('avatarBtn');
-  if (avatarBtn){
-    avatarBtn.textContent = f ? f.name : 'Upload photo';
-    avatarBtn.classList.toggle('used', !!f);
-  }
+  fileBtns.avatar.textContent = f ? f.name : 'Upload photo';
+  fileBtns.avatar.classList.toggle('used', !!f);
+  renderPreview();
+});
+inputs.bannerFile.addEventListener('change', async (e) => {
+  const f = e.target.files?.[0];
+  imageCache.banner = f ? await fileToDataURL(f) : (BANNER_DEFAULT_SRC || PLACEHOLDER_BANNER);
+  fileBtns.banner.textContent = f ? f.name : 'Upload banner';
+  fileBtns.banner.classList.toggle('used', !!f);
   renderPreview();
 });
 
 /* ===== Inputs change ===== */
-[inputs.name, inputs.role, inputs.email, inputs.phone, inputs.linkedin, inputs.lemcal, inputs.avatarUrl]
+[inputs.name, inputs.role, inputs.email, inputs.phone, inputs.linkedin, inputs.lemcal]
   .forEach(el => el && el.addEventListener('input', renderPreview));
-
 [inputs.linkedinToggle, inputs.lemcalToggle, inputs.bannerToggle]
   .forEach(el => el && el.addEventListener('change', renderPreview));
 
 /* ===== Buttons ===== */
 btns.copyGmail.addEventListener('click', async () => {
-  const state = collectState();
-  const htmlExport = buildEmailHTMLForExport(state, { align: 'left' });
+  const htmlExport = buildEmailHTMLForExport(collectState(), { align: 'left' });
   const html = wrapForGmail(htmlExport);
-  try {
-    await copyHtmlToClipboard(html, '');
-  } catch {
-    await navigator.clipboard.writeText(html);
-  } finally {
-    // Si pas d’URL https fournie alors qu’on avait un data:, signale-le visuellement
-    if (isDataUrl(state.avatar) && !isHttpsUrl(state.avatarUrl)) {
-      showCopied(btns.copyGmail, 'Copied (avatar=placeholder)');
-    } else {
-      showCopied(btns.copyGmail);
-    }
-  }
+  try { await copyHtmlToClipboard(html, ''); }
+  catch { await navigator.clipboard.writeText(html); }
+  finally { showCopied(btns.copyGmail); }
 });
 
 btns.openGmail.addEventListener('click', () => {
   window.open('https://mail.google.com/mail/u/0/#settings/general', '_blank');
 });
 
+btns.reset.addEventListener('click', () => {
+  inputs.avatarFile.value = '';
+  inputs.bannerFile.value = '';
+  imageCache.avatar = AVATAR_DEFAULT_SRC || PLACEHOLDER_AVATAR;
+  imageCache.banner = BANNER_DEFAULT_SRC || PLACEHOLDER_BANNER;
+  fileBtns.avatar.textContent = 'Upload photo';
+  fileBtns.banner.textContent = 'Upload banner';
+  fileBtns.avatar.classList.remove('used');
+  fileBtns.banner.classList.remove('used');
+  if (inputs.bannerToggle) inputs.bannerToggle.checked = true; // cohérent avec défaut
+  renderPreview();
+});
+
 /* ===== Init ===== */
 window.addEventListener('load', () => {
-  if (location.protocol !== 'https:') {
-    console.warn('Tip: active HTTPS sur le domaine pour permettre la copie HTML riche (ClipboardItem).');
-  }
-
+  // Initial brand (lemlist)
   applyBrand('lemlist');
 
+  // Wire brand toggle
   document.querySelectorAll('.brand-switch .seg').forEach(btn => {
     btn.addEventListener('click', (e) => {
       const k = e.currentTarget.dataset.brand;

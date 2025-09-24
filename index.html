@@ -6,25 +6,22 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <link rel="icon" type="image/png" href="icons/favicon.png" />
   <link rel="stylesheet" href="styles.css" />
-  <script src="./app.js?v=2025-09-22" defer></script>
 </head>
 <body>
   <header class="app-header">
     <h1>Email Signature Generator</h1>
     <div class="actions">
-      <!-- Switch de marques (flotte en bas à droite via CSS) -->
       <div class="brand-switch" role="tablist" aria-label="Brand switch">
-        <button class="seg is-active" id="brandLemlist" data-brand="lemlist" role="tab" aria-selected="true" title="lemlist">
-          <img src="icons/lemlist-app.png" alt="lemlist" width="24" height="24" />
-        </button>
-        <button class="seg" id="brandTaplio" data-brand="taplio" role="tab" aria-selected="false" title="Taplio">
-          <img src="icons/taplio-app.png" alt="Taplio" width="24" height="24" />
-        </button>
-      </div>
-
+  <button class="seg is-active" id="brandLemlist" data-brand="lemlist" role="tab" aria-selected="true" title="lemlist">
+    <img src="icons/lemlist-app.png" alt="lemlist" width="24" height="24" />
+  </button>
+  <button class="seg" id="brandTaplio" data-brand="taplio" role="tab" aria-selected="false" title="Taplio">
+    <img src="icons/taplio-app.png" alt="Taplio" width="24" height="24" />
+  </button>
+</div>
       <button class="btnprim" id="copyGmail">Copy for Gmail</button>
       <button class="btn ghost" id="openGmail" title="Open Gmail Settings">Open Gmail</button>
-      <!-- Reset retiré -->
+      <button class="btn" id="reset">Reset</button>
     </div>
   </header>
 
@@ -36,7 +33,6 @@
           <div class="preview-card" id="previewCard">
             <div id="signaturePreview"></div>
           </div>
-          <img src="icons/badge.png" alt="Badge" class="site-badge" />
         </div>
       </div>
     </section>
@@ -65,7 +61,7 @@
             <input type="tel" id="phone" value="+33 6 66 66 66 66" placeholder="+33 6 66 66 66 66" />
           </div>
 
-          <!-- Réseaux -->
+          <!-- Réseaux avec vrais toggles au-dessus -->
           <div class="row social-row">
             <div class="social-item">
               <div class="social-head">
@@ -90,36 +86,48 @@
             </div>
           </div>
 
-          <!-- Upload photo (preview) + URL https pour l'export -->
+          <!-- Uploads sur UNE ligne (bouton = nom du fichier si sélectionné) -->
           <div class="row grid-2">
             <div>
-              <label>Photo (pour l’aperçu)</label>
+              <label>Photo</label>
               <div class="file-input">
                 <input type="file" id="avatarFile" accept="image/*" />
                 <button type="button" class="btn file-btn" id="avatarBtn" onclick="avatarFile.click()">Upload photo</button>
               </div>
             </div>
-
             <div>
-              <label for="avatarUrl">Avatar URL (https) — utilisé dans Gmail</label>
-              <input type="url" id="avatarUrl" placeholder="https://signature.bdvs.me/uploads/avatar.png" />
-            </div>
-          </div>
+  <div class="social-head">
+    <label>Banner (500x160)</label>
+    <label class="switch">
+      <input type="checkbox" id="bannerToggle" checked />
+      <span class="slider"></span>
+    </label>
+  </div>
 
-          <!-- Bannière : toggle seulement -->
-          <div class="row">
-            <div class="social-head">
-              <label>Banner (500x160)</label>
-              <label class="switch">
-                <input type="checkbox" id="bannerToggle" checked />
-                <span class="slider"></span>
-              </label>
-            </div>
-            <!-- pas d’upload -->
+  <div class="file-input">
+    <input type="file" id="bannerFile" accept="image/*" />
+    <button type="button" class="btn file-btn" id="bannerBtn" onclick="bannerFile.click()">Upload banner</button>
+  </div>
+</div>
+
           </div>
         </div>
       </form>
     </aside>
   </main>
+
+  <section class="panel preview">
+  <div class="preview-inner" id="previewInner">
+    <div class="signature-base" id="signatureBase">
+      <div class="preview-card" id="previewCard">
+        <div id="signaturePreview"></div>
+      </div>
+      <!-- Badge décoratif (uniquement sur le site) -->
+      <img src="icons/badge.png" alt="Badge" class="site-badge" />
+    </div>
+  </div>
+</section>
+
+  <script src="app.js"></script>
 </body>
 </html>
