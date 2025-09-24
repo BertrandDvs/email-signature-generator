@@ -5,6 +5,8 @@
   --muted:#5B6B7D;
   --border:#E6E6E6;
   --accent:#316bff;
+  --grad-start:#316BFF;
+  --grad-end:#134CDD;
 }
 
 *{ box-sizing:border-box }
@@ -13,8 +15,6 @@ html,body{ margin:0; padding:0; overflow:hidden }
 body{
   font-family: 'Inter', sans-serif;
   color: var(--text);
-
-  /* Fond texturé */
   background-color: #fdfdfd;
   opacity: 0.95;
   background-image: radial-gradient(#dedede 1px, #fdfdfd 1px);
@@ -36,7 +36,6 @@ body{
   transition: background .2s ease, border-color .2s ease, color .2s ease;
 }
 .btn:hover{ border-color:#cbcbcb }
-.btn.primary{ background: var(--accent); border-color: var(--accent); color:#fff }
 .btn.ghost{ background:transparent; }
 
 /* Primary gradient button */
@@ -50,7 +49,6 @@ body{
 }
 .btnprim:hover {
   cursor: pointer;
-  padding:8px 12px; border-radius:10px; font-size:14px; line-height:24px;
   border: 1px solid var(--primary-color);
   background: linear-gradient(0deg, var(--Colors-Button-button-primary-300, #316BFF) 0%, var(--Colors-Button-button-primary-325, #1F5EFF) 100%);
   box-shadow: 0 0 6px 0 var(--shadow-2), 0 2px 4px 0 var(--shadow-8);
@@ -68,25 +66,23 @@ body{
   min-height: calc(100vh - 56px - 48px);
 }
 
-/* Cards (cadre + padding 40px) */
+/* Cards */
 .panel{
   background: var(--panel);
   border:1px solid var(--border);
   border-radius:16px;
   box-shadow: 0 4px 16px rgba(0,0,0,.08);
   padding:40px;
+  overflow: hidden; /* garde tout dans la carte */
 }
-
-.panel form{
-  padding: 20px;
-}
+.panel form{ padding: 20px; }
 
 /* Preview */
 .preview{
-  background: linear-gradient(135deg, #316BFF 0%, #134CDD 100%);
+  background: linear-gradient(135deg, var(--grad-start) 0%, var(--grad-end) 100%);
   border-color: transparent;
   min-height: 520px;
-  padding:0; /* évite double padding avec .panel */
+  padding:0;
 }
 .preview-inner{
   width:100%; height:100%;
@@ -102,16 +98,18 @@ body{
   overflow:hidden;
   padding: 28px;
 }
-#signaturePreview{
-  display:block;
-  line-height:0;
-}
+#signaturePreview{ display:block; line-height:0; }
 
 /* Form */
 .form{ padding:12px 0 0 0; }
 .form-scrollguard{ display:grid; align-items:start; }
 .grid-1{ display:grid; gap:12px; }
-.grid-2{ display:grid; grid-template-columns: 1fr 1fr; gap:12px; }
+.grid-2{
+  display:grid; grid-template-columns: 1fr 1fr; gap:12px;
+}
+/* *** IMPORTANT *** : autorise les colonnes à rétrécir pour éviter le dépassement */
+.grid-2 > div{ min-width: 0; }
+
 .row{ margin:0; }
 label{ display:block; font-size:12px; color:#697586; margin:4px 0 6px }
 input[type="text"], input[type="email"], input[type="url"], input[type="tel"], input[type="number"]{
@@ -129,229 +127,131 @@ input[type="text"], input[type="email"], input[type="url"], input[type="tel"], i
 }
 .social-head label{ margin:0; }
 
-/* ---- Toggle 32x16 Neumorphic ---- */
+/* Toggle 32x16 */
 .switch{
-  --w: 28px;
-  --h: 14px;
-  --pad: 2px;
-  --travel: calc(var(--w) - var(--h));
-  position: relative;
-  display: inline-block;
-  width: var(--w);
-  height: var(--h);
-  vertical-align: middle;
+  --w: 28px; --h: 14px; --pad: 2px; --travel: calc(var(--w) - var(--h));
+  position: relative; display: inline-block; width: var(--w); height: var(--h);
 }
 .switch input{ display:none; }
-
-/* Track */
 .slider{
-  position: absolute; inset:0; cursor: pointer;
-  border-radius: 100px;
+  position: absolute; inset:0; cursor: pointer; border-radius: 100px;
   background: linear-gradient(45deg,#eaf0f6,#adadad);
-  box-shadow:
-    inset 0 1px 1px rgba(255,255,255,.80),
-    inset 0 -1.5px 2px rgba(0,0,0,.08),
-    0 1px 2px rgba(0,0,0,.10);
+  box-shadow: inset 0 1px 1px rgba(255,255,255,.80), inset 0 -1.5px 2px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.10);
   transition: background .2s ease, box-shadow .2s ease;
 }
 .switch input:checked + .slider{
   background: linear-gradient(45deg,#2f7dff,#1a56f5);
-  box-shadow:
-    inset 0 1px 1px rgba(255,255,255,.55),
-    inset 0 -2px 3px rgba(0,0,0,.25),
-    0 2px 4px rgba(31,102,255,.30);
+  box-shadow: inset 0 1px 1px rgba(255,255,255,.55), inset 0 -2px 3px rgba(0,0,0,.25), 0 2px 4px rgba(31,102,255,.30);
 }
-
-/* Knob */
 .slider::before{
-  content:"";
-  position:absolute;
-  left: var(--pad);
-  top:  var(--pad);
-  width: calc(var(--h) - var(--pad) * 2);
-  height: calc(var(--h) - var(--pad) * 2);
+  content:""; position:absolute; left: var(--pad); top: var(--pad);
+  width: calc(var(--h) - var(--pad) * 2); height: calc(var(--h) - var(--pad) * 2);
   border-radius: 100px;
   background: radial-gradient(120% 120% at 30% 25%,#ffffff 0%,#eaf0f6 70%,#d3dbe6 100%);
-  box-shadow:
-    0 1px 2px rgba(0,0,0,.20),
-    inset 0 1px 0 rgba(255,255,255,.85),
-    inset 0 -2px 4px rgba(0,0,0,.10);
+  box-shadow: 0 1px 2px rgba(0,0,0,.20), inset 0 1px 0 rgba(255,255,255,.85), inset 0 -2px 4px rgba(0,0,0,.10);
   transition: transform .22s ease, background .2s ease, box-shadow .2s ease;
 }
+.switch:not(:has(input:checked)) .slider::before{ background: #585858; }
+.switch input:checked + .slider::before{ transform: translateX(var(--travel)); }
+.switch input:focus-visible + .slider{ outline: 2px solid #5b9dff; outline-offset: 2px; }
 
-/* Knob foncé quand OFF (comme ta ref) — nécessite :has() (OK Chrome/Safari/FF récents) */
-.switch:not(:has(input:checked)) .slider::before{
-  background: #585858;  
+/* ===== Upload full-width + truncation + clear button ===== */
+.file-input{
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+  max-width: 100%;
 }
-
-/* Déplacement du knob */
-.switch input:checked + .slider::before{
-  transform: translateX(var(--travel));
-}
-
-
-/* Focus accesible */
-.switch input:focus-visible + .slider{
-  outline: 2px solid #5b9dff; outline-offset: 2px;
-}
-
-/* Upload buttons */
-.file-input{ display:flex; align-items:center; gap:4px; }
 .file-input input[type="file"]{ position:absolute; left:-9999px; }
-.file-btn{ height:40px; line-height:24px; }
+
+.file-btn{
+  flex: 1 1 auto;
+  width: 100%;
+  max-width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start; /* évite la poussée */
+  gap: 8px;
+  padding-right: 44px; /* place pour la croix */
+  height:40px; line-height:24px;
+  overflow: hidden; /* empêche tout dépassement visuel */
+}
+
+/* texte tronqué uniquement (bouton fixe) */
+.file-btn .file-label{
+  flex: 1 1 auto;
+  min-width: 0;          /* clé pour l’ellipsis dans flex/grid */
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  text-align: left;
+}
+
+/* état "fichier choisi" */
 .file-btn.used{
   background: #F2F7FF;
   border-color: var(--accent);
   color: #134CDD;
 }
 
-/* --- Highlight (preview only) --- */
-.preview .preview-card { position: relative; } /* permet l’overlay absolu */
-
-.spotlight {
+/* bouton clear circulaire */
+.clear-btn{
   position: absolute;
-  border-radius: 10px;
-  pointer-events: none;
-  z-index: 5;
-  box-shadow:
-    0 0 0 0 rgba(49,107,255,.20),
-    0 0 0 2px rgba(49,107,255,.85) inset;
-  animation: haloPulse 900ms ease-out forwards;
-}
-
-@keyframes haloPulse {
-  0%   { box-shadow: 0 0 0 0 rgba(49,107,255,.25), 0 0 0 2px rgba(49,107,255,.90) inset; opacity: 1; }
-  60%  { box-shadow: 0 0 0 12px rgba(49,107,255,.18), 0 0 0 2px rgba(49,107,255,.65) inset; }
-  100% { box-shadow: 0 0 0 22px rgba(49,107,255,0), 0 0 0 2px rgba(49,107,255,0) inset; opacity: 0; }
-}
-
-.spotlight-tip {
-  position: absolute;
-  top: -8px; left: 0; transform: translateY(-100%);
-  background: #111; color: #fff;
-  font-size: 12px; line-height: 1;
-  padding: 6px 8px; border-radius: 8px;
-  white-space: nowrap; opacity: 0; z-index: 6;
-  animation: tipFade 900ms ease-out forwards;
-}
-.spotlight-tip::after {
-  content: ""; position: absolute; left: 10px; top: 100%;
-  border: 6px solid transparent; border-top-color: #111;
-}
-
-/* si pas de place au-dessus, on place l’étiquette en dessous */
-.spotlight-tip.below {
-  top: auto; bottom: -8px; transform: translateY(100%);
-}
-.spotlight-tip.below::after {
-  top: auto; bottom: 100%;
-  border-top-color: transparent; border-bottom-color: #111;
-}
-
-/* ====== Copied animation styles ====== */
-/* Empêche le saut de mise en page quand on change le contenu : transition et largeur figée côté JS */
-#copyGmail { will-change: transform; }
-
-.btn.is-copied, .btnprim.is-copied {
-  border-color: var(--accent);
-  background: #134CDD;
-  color: #f2f7ff;
-}
-
-.copied-anim {
-  display: inline-flex;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 28px; height: 28px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: #fff;
+  display: none; /* visible quand has-file */
   align-items: center;
-  gap: 8px;
-  line-height: 24px;
-  animation: popIn 120ms ease-out forwards;
+  justify-content: center;
+  cursor: pointer;
 }
-
-.copied-anim svg {
+.file-input.has-file .clear-btn{ display: inline-flex; }
+.clear-btn svg{
   width: 16px; height: 16px;
-  stroke: currentColor; fill: none; stroke-width: 3;
+  stroke: #666; fill: none; stroke-width: 2;
   stroke-linecap: round; stroke-linejoin: round;
-  stroke-dasharray: 22;
-  stroke-dashoffset: 22;
-  animation: drawCheck 500ms ease forwards 60ms;
+  pointer-events: none;
 }
+.clear-btn:hover{ border-color: #d0d0d0; background: #fafafa; }
 
-@keyframes popIn {
-  from { transform: scale(.96); opacity: .0; }
-  to   { transform: scale(1);   opacity: 1;  }
-}
+/* Highlight (preview only) */
+.preview .preview-card { position: relative; }
+.spotlight { position: absolute; border-radius: 10px; pointer-events: none; z-index: 5;
+  box-shadow: 0 0 0 0 rgba(49,107,255,.20), 0 0 0 2px rgba(49,107,255,.85) inset; animation: haloPulse 900ms ease-out forwards; }
+@keyframes haloPulse { 0%{ box-shadow: 0 0 0 0 rgba(49,107,255,.25), 0 0 0 2px rgba(49,107,255,.90) inset; opacity:1;}
+  60%{ box-shadow: 0 0 0 12px rgba(49,107,255,.18), 0 0 0 2px rgba(49,107,255,.65) inset;}
+  100%{ box-shadow:0 0 0 22px rgba(49,107,255,0), 0 0 0 2px rgba(49,107,255,0) inset; opacity:0;}}
+.spotlight-tip{ position:absolute; top:-8px; left:0; transform:translateY(-100%); background:#111; color:#fff; font-size:12px; line-height:1; padding:6px 8px; border-radius:8px; white-space:nowrap; opacity:0; z-index:6; animation: tipFade 900ms ease-out forwards; }
+.spotlight-tip::after{ content:""; position:absolute; left:10px; top:100%; border:6px solid transparent; border-top-color:#111; }
+.spotlight-tip.below{ top:auto; bottom:-8px; transform:translateY(100%); }
+.spotlight-tip.below::after{ top:auto; bottom:100%; border-top-color:transparent; border-bottom-color:#111; }
 
-@keyframes drawCheck {
-  to { stroke-dashoffset: 0; }
-}
+/* Copied animation */
+#copyGmail { will-change: transform; }
+.btn.is-copied, .btnprim.is-copied { border-color: var(--accent); background: #134CDD; color: #f2f7ff; }
+.copied-anim { display: inline-flex; align-items: center; gap: 8px; line-height: 24px; animation: popIn 120ms ease-out forwards; }
+.copied-anim svg { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 22; stroke-dashoffset: 22; animation: drawCheck 500ms ease forwards 60ms; }
+@keyframes popIn { from { transform: scale(.96); opacity: .0; } to { transform: scale(1); opacity: 1; } }
+@keyframes drawCheck { to { stroke-dashoffset: 0; } }
 
-.site-badge {
-  position: absolute;
-  bottom: 20px;   /* marge avec le bas */
-  left: 20px;     /* marge avec le bord gauche */
-  height: 70px;   /* ajuste selon ton badge */
-  pointer-events: none; /* évite de cliquer dessus */
-  opacity: 1;   /* optionnel : un petit effet */
-}
+.site-badge { position: absolute; bottom: 20px; left: 20px; height: 70px; pointer-events: none; opacity: 1; }
 
-:root{
-  --bg:#ffffff;
-  --panel:#FBFBFB;
-  --text:#17161B;
-  --muted:#5B6B7D;
-  --border:#E6E6E6;
-  --accent:#316bff;            /* défaut lemlist */
-  --grad-start:#316BFF;        /* défaut lemlist */
-  --grad-end:#134CDD;          /* défaut lemlist */
-}
-
-/* Toggle de marque dans le header */
-.brand-switch {
-  position: fixed;        /* le fait flotter par-dessus */
-  bottom: 20px;           /* marge bas */
-  right: 20px;            /* marge droite */
-  z-index: 1000;          /* reste au-dessus */
-  background:#fff;
-  border:1px solid var(--border);
-  border-radius:14px;
-  padding:4px;
-  display:flex;
-  gap:2px;
-  align-items:center;
-  box-shadow: 0 2px 8px rgba(0,0,0,.08);
-}
-
-.brand-switch .seg{
-  appearance:none; border:0; background:#ffffff; cursor:pointer;
-  width:36px; height:36px; border-radius:10px; display:grid; place-items:center;
-  transition: box-shadow .2s ease, background .2s ease, transform .08s ease;
-}
+/* Brand switch */
+.brand-switch { position: fixed; bottom: 20px; right: 20px; z-index: 1000; background:#fff; border:1px solid var(--border); border-radius:14px; padding:4px; display:flex; gap:2px; align-items:center; box-shadow: 0 2px 8px rgba(0,0,0,.08); }
+.brand-switch .seg{ appearance:none; border:0; background:#ffffff; cursor:pointer; width:36px; height:36px; border-radius:10px; display:grid; place-items:center; transition: box-shadow .2s ease, background .2s ease, transform .08s ease; }
 .brand-switch .seg img{ display:block; width:24px; height:24px; }
 .brand-switch .seg:is(:hover,:focus-visible){ outline:none; box-shadow:0 0 0 1px rgba(49,107,255,.22) inset; }
-.brand-switch .seg.is-active{
-  background:#e3edfe;
-  box-shadow: 0 0 0 1px rgba(212, 224, 255, 0.75) inset, 0 1px 4px rgba(0,0,0,.05);
-}
+.brand-switch .seg.is-active{ background:#e3edfe; box-shadow: 0 0 0 1px rgba(212, 224, 255, 0.75) inset, 0 1px 4px rgba(0,0,0,.05); }
+.brand-switch .seg:not(.is-active){ opacity: .3; }
 
-.brand-switch .seg:not(.is-active){
-  opacity: .3;                   /* ← demandé */
-}
-
-/* Preview => gradient piloté par variables */
-.preview{
-  background: linear-gradient(135deg, var(--grad-start) 0%, var(--grad-end) 100%);
-  border-color: transparent;
-  min-height: 520px;
-  padding:0;
-}
-
-
+/* Cacher le toggle LinkedIn si inutile */
 #linkedinToggle,
-#linkedinToggle + .slider {
-  display: none !important;
-}
+#linkedinToggle + .slider { display: none !important; }
 
 /* Espace entre "Banner (500x160)" et le bouton "Upload banner" */
-.grid-2 .social-head + .file-input {
-  margin-top: 6px; /* même spacing que le label "Photo" */
-}
-
+.grid-2 .social-head + .file-input { margin-top: 6px; }

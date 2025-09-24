@@ -21,7 +21,6 @@
       </div>
       <button class="btnprim" id="copyGmail">Copy for Gmail</button>
       <button class="btn ghost" id="openGmail" title="Open Gmail Settings">Open Gmail</button>
-      <button class="btn" id="reset">Reset</button>
     </div>
   </header>
 
@@ -33,6 +32,7 @@
           <div class="preview-card" id="previewCard">
             <div id="signaturePreview"></div>
           </div>
+          <img src="icons/badge.png" alt="Badge" class="site-badge" />
         </div>
       </div>
     </section>
@@ -86,15 +86,26 @@
             </div>
           </div>
 
-          <!-- Uploads -->
+          <!-- Uploads (2 colonnes, chaque bouton pleine largeur) -->
           <div class="row grid-2">
+            <!-- Photo -->
             <div>
               <label>Photo</label>
-              <div class="file-input">
+              <div class="file-input" data-kind="avatar">
                 <input type="file" id="avatarFile" accept="image/*" />
-                <button type="button" class="btn file-btn" id="avatarBtn" onclick="avatarFile.click()">Upload photo</button>
+                <button type="button" class="btn file-btn" id="avatarBtn">
+                  <span class="file-label" title="Upload photo">Upload photo</span>
+                </button>
+                <button type="button" class="clear-btn" id="avatarClear" aria-label="Remove photo" title="Remove photo">
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <path d="M8 8 L16 16 M16 8 L8 16"></path>
+                  </svg>
+                </button>
               </div>
             </div>
+
+            <!-- Banner -->
             <div>
               <div class="social-head">
                 <label>Banner (500x160)</label>
@@ -104,9 +115,17 @@
                 </label>
               </div>
 
-              <div class="file-input">
+              <div class="file-input" data-kind="banner">
                 <input type="file" id="bannerFile" accept="image/*" />
-                <button type="button" class="btn file-btn" id="bannerBtn" onclick="bannerFile.click()">Upload banner</button>
+                <button type="button" class="btn file-btn" id="bannerBtn">
+                  <span class="file-label" title="Upload banner">Upload banner</span>
+                </button>
+                <button type="button" class="clear-btn" id="bannerClear" aria-label="Remove banner" title="Remove banner">
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <path d="M8 8 L16 16 M16 8 L8 16"></path>
+                  </svg>
+                </button>
               </div>
             </div>
           </div>
@@ -115,27 +134,15 @@
     </aside>
   </main>
 
-  <section class="panel preview">
-    <div class="preview-inner" id="previewInner">
-      <div class="signature-base" id="signatureBase">
-        <div class="preview-card" id="previewCard">
-          <div id="signaturePreview"></div>
-        </div>
-        <!-- Badge décoratif (uniquement sur le site) -->
-        <img src="icons/badge.png" alt="Badge" class="site-badge" />
-      </div>
-    </div>
-  </section>
-
-  <!-- Supabase client + config (UN SEUL bloc) -->
+  <!-- Supabase client + config -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
     window.SUPABASE_CFG = {
       url: 'https://gdkuxrrxwnufdbpqooim.supabase.co',
       anon: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imdka3V4cnJ4d251ZmRicHFvb2ltIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg3Mjk3MTYsImV4cCI6MjA3NDMwNTcxNn0.ZGKsAy-76dBUtnOtqEpccaRvcKejA0VIpQl8owNI9VU',
       bucket: 'signatures',
-      folder: 'avatars',        // uploads avatar -> signatures/avatars/
-      bannersFolder: 'banners'  // uploads banner -> signatures/banners/
+      folder: 'avatars',
+      bannersFolder: 'banners'
     };
   </script>
 

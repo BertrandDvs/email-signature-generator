@@ -7,16 +7,15 @@ const SB = {
   url:            (window.SUPABASE_CFG && window.SUPABASE_CFG.url)            || '',
   anon:           (window.SUPABASE_CFG && window.SUPABASE_CFG.anon)           || '',
   bucket:         (window.SUPABASE_CFG && window.SUPABASE_CFG.bucket)         || 'signatures',
-  folder:         (window.SUPABASE_CFG && window.SUPABASE_CFG.folder)         || 'avatars',   // avatars/
-  bannersFolder:  (window.SUPABASE_CFG && window.SUPABASE_CFG.bannersFolder)  || 'banners',   // banners/
+  folder:         (window.SUPABASE_CFG && window.SUPABASE_CFG.folder)         || 'avatars',
+  bannersFolder:  (window.SUPABASE_CFG && window.SUPABASE_CFG.bannersFolder)  || 'banners',
 };
 const supabase = (SB.url && SB.anon) ? window.supabase.createClient(SB.url, SB.anon) : null;
-console.log('[SB CFG]', SB);
 
 /* ===== Image helpers (compression WebP) ===== */
-const AVATAR_MAX_SIDE = 600;            // px
-const BANNER_MAX_W    = 1200;           // px
-const BANNER_MAX_H    = 600;            // px
+const AVATAR_MAX_SIDE = 600;
+const BANNER_MAX_W    = 1200;
+const BANNER_MAX_H    = 600;
 const WEBP_QUALITY_AVATAR = 0.86;
 const WEBP_QUALITY_BANNER = 0.84;
 
@@ -33,17 +32,15 @@ function canvasToBlob(canvas, type, quality){
   return new Promise(res => canvas.toBlob(b => res(b), type, quality));
 }
 async function compressImage(file, {maxW, maxH, quality=0.85, prefer='image/webp'}){
-  // Décode l’image
   const img = await loadImageFromFile(file);
   const inW = img.naturalWidth || img.width;
   const inH = img.naturalHeight || img.height;
 
-  // Calcule dimensions cibles (contain)
   let outW = inW, outH = inH;
   if (maxW || maxH){
     const rW = maxW ? maxW / inW : 1;
     const rH = maxH ? maxH / inH : 1;
-    const ratio = Math.min(rW, rH, 1);  // jamais upscale
+    const ratio = Math.min(rW, rH, 1);
     outW = Math.max(1, Math.round(inW * ratio));
     outH = Math.max(1, Math.round(inH * ratio));
   }
@@ -53,22 +50,14 @@ async function compressImage(file, {maxW, maxH, quality=0.85, prefer='image/webp
   const ctx = canvas.getContext('2d');
   ctx.drawImage(img, 0, 0, outW, outH);
 
-  // Tente WebP → fallback JPEG si null (Safari très ancien / formats exotiques)
   let blob = await canvasToBlob(canvas, prefer, quality);
-  let mime = prefer;
-  if (!blob) {
-    mime = 'image/jpeg';
-    blob = await canvasToBlob(canvas, mime, Math.min(0.9, quality + 0.05));
-  }
-  return { blob, width: outW, height: outH, mime };
+  if (!blob) blob = await canvasToBlob(canvas, 'image/jpeg', Math.min(0.9, quality + 0.05));
+  return { blob, width: outW, height: outH };
 }
 
 function blobToFile(blob, filename){
-  try { return new File([blob], filename, { type: blob.type }); }
-  catch { // Safari iOS vieux
-    blob.name = filename;
-    return blob; // « pseudo File »
-  }
+  try { return new File([blob], filename, { type: blob.type || 'image/webp' }); }
+  catch { blob.name = filename; return blob; }
 }
 
 function slugifyFilename(name='asset'){
@@ -76,82 +65,71 @@ function slugifyFilename(name='asset'){
 }
 function fileExt(file){ return (file.name && file.name.match(/\.\w+$/) || [''])[0] || '.jpg'; }
 
-/** Upload générique → retourne une URL https publique (Gmail OK) */
+/* truncate middle for labels */
+function truncateMiddle(str, max = 36){
+  if (!str) return '';
+  if (str.length <= max) return str;
+  const half = Math.floor((max - 3) / 2);
+  return str.slice(0, half) + '…' + str.slice(-half);
+}
+
+/** Upload → URL publique */
 async function uploadToSupabaseFolder(file, folderName, userHint='user') {
   if (!supabase) throw new Error('Supabase not configured');
 
-  // Autorisés
   const okTypes = ['image/jpeg','image/png','image/webp','image/gif'];
   const MAX_MB = 8;
-  if (!okTypes.includes(file.type)) throw new Error('Format invalide (jpg/png/webp/gif)');
+  const type = file.type || 'application/octet-stream';
+  if (!okTypes.includes(type)) throw new Error('Format invalide (jpg/png/webp/gif)');
   if (file.size > MAX_MB * 1024 * 1024) throw new Error(`Fichier trop lourd (> ${MAX_MB} Mo)`);
 
   const id = (crypto && crypto.randomUUID) ? crypto.randomUUID() : String(Date.now());
   const base = slugifyFilename(userHint || 'user');
-  const ext  = (file.name && file.name.split('.').pop()) ? ('.' + file.name.split('.').pop()) : (file.type === 'image/webp' ? '.webp' : fileExt(file));
+  const ext  = file.name && file.name.includes('.') ? ('.' + file.name.split('.').pop()) : (type === 'image/webp' ? '.webp' : fileExt(file));
   const path = `${folderName}/${base}-${id}${ext}`;
-
-  console.log('[UPLOAD]', { bucket: SB.bucket, path, type: file.type, size: file.size });
 
   const { data, error } = await supabase.storage
     .from(SB.bucket)
     .upload(path, file, {
       upsert: false,
       cacheControl: '31536000',
-      contentType: file.type
+      contentType: type
     });
-
-  console.log('[UPLOAD RESULT]', { data, error });
   if (error) throw error;
 
   const pub = supabase.storage.from(SB.bucket).getPublicUrl(path);
-  console.log('[PUBLIC URL]', pub);
   return pub.data.publicUrl;
 }
-
 function showUploadError(kind, err){
   const msg = (err && (err.message || err.error || err.msg)) ? String(err.message || err.error || err.msg) : String(err);
   alert(
     `Échec de l'hébergement de ${kind}.\n\n` +
     `${msg}\n\n` +
-    `Vérifie: Storage bucket "${SB.bucket}" public, policies RLS pour "${kind === 'la bannière' ? 'banners/%' : 'avatars/%'}", et CORS (Settings → API).\n` +
+    `Vérifie: Storage bucket "${SB.bucket}" public, policies RLS (avatars/% ou banners/%), et CORS (Settings → API).\n` +
     `Regarde la console pour les logs détaillés.`
   );
 }
 
-/* ============================================================================
-   Brand profiles (couleurs, site, assets)
-   ========================================================================== */
+/* ===== Brand profiles & assets ===== */
 const BRAND_PROFILES = {
   lemlist: {
-    key: 'lemlist',
-    site: 'www.lemlist.com',
-    colors: {
-      separator:'#E6E6E6', name:'#213856', role:'#566F8F',
-      site:'#98A1AC', text:'#17161B', muted:'#566F8F', accent:'#316BFF'
-    },
+    key: 'lemlist', site: 'www.lemlist.com',
+    colors: { separator:'#E6E6E6', name:'#213856', role:'#566F8F', site:'#98A1AC', text:'#17161B', muted:'#566F8F', accent:'#316BFF' },
     gradient: ['#316BFF','#134CDD'],
     assets: {
-      // locaux (preview)
       logoLocal:   'icons/logo.gif',
       avatarLocal: 'icons/avatar-placeholder.png',
       bannerLocal: 'icons/banner-placeholder.png',
-      // publics (GitHub Pages)
       logoPublic:   'logo.gif',
       avatarPublic: 'avatar-placeholder.png',
       bannerPublic: 'banner-placeholder.png',
-      // icônes sociaux
       linkedinPublic: 'linkedin.png',
       lemcalPublic:   'lemcal.png'
     }
   },
   taplio: {
-    key: 'taplio',
-    site: 'www.taplio.com',
-    colors: {
-      separator:'#E6E6E6', name:'#1A1333', role:'#6F6B80',
-      site:'#9BA0AC', text:'#14121A', muted:'#6F6B80', accent:'#7C4DFF'
-    },
+    key: 'taplio', site: 'www.taplio.com',
+    colors: { separator:'#E6E6E6', name:'#1A1333', role:'#6F6B80', site:'#9BA0AC', text:'#14121A', muted:'#6F6B80', accent:'#7C4DFF' },
     gradient: ['#0568CC','#54A9FF'],
     assets: {
       logoLocal:   'icons/taplio-logo.gif',
@@ -165,28 +143,20 @@ const BRAND_PROFILES = {
     }
   }
 };
-
-/* ===== Public assets base (GitHub Pages) ===== */
 const PUBLIC_ASSET_BASE = 'https://bertranddvs.github.io/email-signature-generator/icons/';
-
-/* >>> Cache-buster global <<< */
 const ASSET_VERSION = '2025-09-22-01';
 
-/* ===== State brand/theme (mutable) ===== */
-let CURRENT_BRAND = BRAND_PROFILES.lemlist; // défaut
+let CURRENT_BRAND = BRAND_PROFILES.lemlist;
 let THEME = { colors: CURRENT_BRAND.colors, site: CURRENT_BRAND.site };
 let PUBLIC_ASSETS_CURRENT = mapPublicAssets(CURRENT_BRAND);
 
-/* ===== Colors (fallbacks SVG) ===== */
 const LINKEDIN_FALLBACK = rectSVG(40, 40, '#0A66C2', 'in');
 const LEMCAL_FALLBACK   = rectSVG(40, 40, '#316BFF', 'cal');
 const PLACEHOLDER_AVATAR = rectSVG(89, 89, '#E9EEF2', 'Photo');
 const PLACEHOLDER_BANNER = rectSVG(600, 120, '#DDEEE8', 'Banner');
 
-/* ===== Local assets (preview / app) ===== */
 const ASSETS = { linkedin: 'icons/linkedin.png', lemcal: 'icons/lemcal.png' };
 
-/* ===== Image sources (no web fetch) ===== */
 let LOGO_SRC           = CURRENT_BRAND.assets.logoLocal;
 let ICON_LINKEDIN_SRC  = ASSETS.linkedin;
 let ICON_LEMCAL_SRC    = ASSETS.lemcal;
@@ -212,14 +182,20 @@ const inputs = {
 };
 
 const fileBtns = { avatar: byId('avatarBtn'), banner: byId('bannerBtn') };
-const els = { previewCard: byId('previewCard'), preview: byId('signaturePreview') };
-const btns = { copyGmail: byId('copyGmail'), openGmail: byId('openGmail'), reset: byId('reset') };
+const clearBtns = { avatar: byId('avatarClear'), banner: byId('bannerClear') };
+const fileWrappers = {
+  avatar: document.querySelector('.file-input[data-kind="avatar"]'),
+  banner: document.querySelector('.file-input[data-kind="banner"]'),
+};
+const fileLabels = {
+  avatar: fileWrappers.avatar?.querySelector('.file-label'),
+  banner: fileWrappers.banner?.querySelector('.file-label'),
+};
 
-/* Expose pour les onclick HTML */
-window.avatarFile = inputs.avatarFile;
-window.bannerFile = inputs.bannerFile;
+const els  = { previewCard: byId('previewCard'), preview: byId('signaturePreview') };
+const btns = { copyGmail: byId('copyGmail'), openGmail: byId('openGmail') };
 
-/* ===== Utils ===== */
+/* ===== Utils (non-image) ===== */
 function rectSVG(w, h, color, label) {
   const fontSize = 14;
   const svg =
@@ -262,24 +238,26 @@ async function copyHtmlToClipboard(html, plainTextFallback = '') {
   await navigator.clipboard.writeText(plainTextFallback || html);
 }
 
-/* ===== Copied anim ===== */
-function showCopied(btn, label = 'Copied') {
-  if (!btn.dataset.label) btn.dataset.label = btn.textContent.trim();
-  const styles = getComputedStyle(btn);
-  btn.style.width = styles.width;
-  btn.disabled = true;
-  btn.classList.add('is-copied');
-  btn.innerHTML = `
-    <span class="copied-anim" aria-hidden="true">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 13l4 4L19 7"></path></svg>
-      <span>${label}</span>
-    </span>`;
-  window.setTimeout(() => {
-    btn.classList.remove('is-copied');
-    btn.disabled = false;
-    btn.textContent = btn.dataset.label;
-    requestAnimationFrame(() => { btn.style.width = ''; });
-  }, 1200);
+/* ===== UI helpers upload ===== */
+function setFileUI(kind, fileName){
+  const wrap = fileWrappers[kind];
+  const btn  = (kind === 'avatar') ? fileBtns.avatar : fileBtns.banner;
+  const labelEl = fileLabels[kind];
+  if (!wrap || !btn || !labelEl) return;
+
+  if (fileName){
+    const truncated = truncateMiddle(fileName, 36);
+    labelEl.textContent = truncated;
+    labelEl.title = fileName;
+    btn.classList.add('used');
+    wrap.classList.add('has-file');
+  } else {
+    const placeholder = (kind === 'banner') ? 'Upload banner' : 'Upload photo';
+    labelEl.textContent = placeholder;
+    labelEl.title = placeholder;
+    btn.classList.remove('used');
+    wrap.classList.remove('has-file');
+  }
 }
 
 /* ===== Public assets mapping ===== */
@@ -478,7 +456,7 @@ function buildEmailHTML(state, { align = 'center' } = {}) {
 </table>`.trim();
 }
 
-/* ===== Variante export (force URLs publiques) ===== */
+/* ===== Export ===== */
 function buildEmailHTMLForExport(state, opts) {
   const safeState = {
     ...state,
@@ -501,17 +479,17 @@ function buildEmailHTMLForExport(state, opts) {
   return html;
 }
 
-/* ===== Preview renderer ===== */
+/* ===== Preview ===== */
 function renderPreview() {
   const state = collectState();
-  els.preview.innerHTML = buildEmailHTML(state, { align: 'center' }); // preview centrée
+  els.preview.innerHTML = buildEmailHTML(state, { align: 'center' });
 
   const card = els.previewCard;
   card.style.maxWidth = PREVIEW_MAX_WIDTH + 'px';
   card.style.transformOrigin = 'top left';
 
   requestAnimationFrame(() => {
-    const wrapRect = byId('previewInner').getBoundingClientRect();
+    const wrapRect = document.getElementById('previewInner').getBoundingClientRect();
     const cardRect = card.getBoundingClientRect();
     const scale = Math.min(
       BASE_PREVIEW_SCALE,
@@ -529,29 +507,23 @@ function applyBrand(key){
   THEME = { colors: prof.colors, site: prof.site };
   PUBLIC_ASSETS_CURRENT = mapPublicAssets(prof);
 
-  // Set CSS variables (accent + gradient)
   document.documentElement.style.setProperty('--accent', prof.colors.accent);
   document.documentElement.style.setProperty('--grad-start', prof.gradient[0]);
   document.documentElement.style.setProperty('--grad-end',   prof.gradient[1]);
 
-  // Set local defaults
   LOGO_SRC           = prof.assets.logoLocal;
   AVATAR_DEFAULT_SRC = prof.assets.avatarLocal;
   BANNER_DEFAULT_SRC = prof.assets.bannerLocal;
 
-  // Reset uploads à la brand
   inputs.avatarFile.value = '';
   inputs.bannerFile.value = '';
   imageCache.avatar = AVATAR_DEFAULT_SRC || PLACEHOLDER_AVATAR;
   imageCache.banner = BANNER_DEFAULT_SRC || PLACEHOLDER_BANNER;
-  fileBtns.avatar.textContent = 'Upload photo';
-  fileBtns.banner.textContent = 'Upload banner';
-  fileBtns.avatar.classList.remove('used');
-  fileBtns.banner.classList.remove('used');
+  setFileUI('avatar', null);
+  setFileUI('banner', null);
 
-  // Toggle UI state
-  const btnL = byId('brandLemlist');
-  const btnT = byId('brandTaplio');
+  const btnL = document.getElementById('brandLemlist');
+  const btnT = document.getElementById('brandTaplio');
   if (btnL && btnT){
     btnL.classList.toggle('is-active', key === 'lemlist');
     btnT.classList.toggle('is-active', key === 'taplio');
@@ -563,33 +535,29 @@ function applyBrand(key){
 }
 
 /* ===== File inputs ===== */
-/* AVATAR: preview → compression WebP → upload Supabase → URL publique */
+fileBtns.avatar.addEventListener('click', () => inputs.avatarFile.click());
+fileBtns.banner.addEventListener('click', () => inputs.bannerFile.click());
+
 inputs.avatarFile.addEventListener('change', async (e) => {
   const f = e.target.files?.[0];
-
   if (!f) {
     imageCache.avatar = AVATAR_DEFAULT_SRC || PLACEHOLDER_AVATAR;
-    fileBtns.avatar.textContent = 'Upload photo';
-    fileBtns.avatar.classList.remove('used');
+    setFileUI('avatar', null);
     renderPreview();
     return;
   }
 
-  // 1) Preview immédiate (fichier original)
   imageCache.avatar = await fileToDataURL(f);
-  fileBtns.avatar.textContent = f.name;
-  fileBtns.avatar.classList.add('used');
+  setFileUI('avatar', f.name);
   renderPreview();
 
-  // 2) Compression WebP
   try {
-    const { blob, mime } = await compressImage(f, { maxW: AVATAR_MAX_SIDE, maxH: AVATAR_MAX_SIDE, quality: WEBP_QUALITY_AVATAR, prefer: 'image/webp' });
+    const { blob } = await compressImage(f, { maxW: AVATAR_MAX_SIDE, maxH: AVATAR_MAX_SIDE, quality: WEBP_QUALITY_AVATAR, prefer: 'image/webp' });
     const newName = `${slugifyFilename(inputs.name?.value || 'user')}-avatar.webp`;
     const webpFile = blobToFile(blob, newName);
 
-    // 3) Upload → remplace preview par URL publique
     const hostedUrl = await uploadToSupabaseFolder(webpFile, SB.folder, inputs.name?.value || 'user');
-    imageCache.avatar = hostedUrl;   // HTTPS public
+    imageCache.avatar = hostedUrl;
     renderPreview();
   } catch (err) {
     console.error('[Avatar compress/upload failed]', err);
@@ -597,33 +565,26 @@ inputs.avatarFile.addEventListener('change', async (e) => {
   }
 });
 
-/* BANNER: preview → compression WebP → upload Supabase → URL publique */
 inputs.bannerFile.addEventListener('change', async (e) => {
   const f = e.target.files?.[0];
-
   if (!f) {
     imageCache.banner = BANNER_DEFAULT_SRC || PLACEHOLDER_BANNER;
-    fileBtns.banner.textContent = 'Upload banner';
-    fileBtns.banner.classList.remove('used');
+    setFileUI('banner', null);
     renderPreview();
     return;
   }
 
-  // 1) Preview immédiate (original)
   imageCache.banner = await fileToDataURL(f);
-  fileBtns.banner.textContent = f.name;
-  fileBtns.banner.classList.add('used');
+  setFileUI('banner', f.name);
   renderPreview();
 
-  // 2) Compression WebP (largeur max 1200, hauteur max 600)
   try {
-    const { blob, mime } = await compressImage(f, { maxW: BANNER_MAX_W, maxH: BANNER_MAX_H, quality: WEBP_QUALITY_BANNER, prefer: 'image/webp' });
+    const { blob } = await compressImage(f, { maxW: BANNER_MAX_W, maxH: BANNER_MAX_H, quality: WEBP_QUALITY_BANNER, prefer: 'image/webp' });
     const newName = `${slugifyFilename(inputs.name?.value || 'user')}-banner.webp`;
     const webpFile = blobToFile(blob, newName);
 
-    // 3) Upload → remplace preview par URL publique
     const hostedUrl = await uploadToSupabaseFolder(webpFile, SB.bannersFolder, (inputs.name?.value || 'user') + '-banner');
-    imageCache.banner = hostedUrl;   // HTTPS public
+    imageCache.banner = hostedUrl;
     renderPreview();
   } catch (err) {
     console.error('[Banner compress/upload failed]', err);
@@ -631,48 +592,66 @@ inputs.bannerFile.addEventListener('change', async (e) => {
   }
 });
 
-/* ===== Inputs change ===== */
+/* CLEAR buttons */
+clearBtns.avatar.addEventListener('click', (e) => {
+  e.stopPropagation();
+  inputs.avatarFile.value = '';
+  imageCache.avatar = AVATAR_DEFAULT_SRC || PLACEHOLDER_AVATAR;
+  setFileUI('avatar', null);
+  renderPreview();
+});
+clearBtns.banner.addEventListener('click', (e) => {
+  e.stopPropagation();
+  inputs.bannerFile.value = '';
+  imageCache.banner = BANNER_DEFAULT_SRC || PLACEHOLDER_BANNER;
+  setFileUI('banner', null);
+  renderPreview();
+});
+
+/* Inputs change */
 [inputs.name, inputs.role, inputs.email, inputs.phone, inputs.linkedin, inputs.lemcal]
   .forEach(el => el && el.addEventListener('input', renderPreview));
 [inputs.linkedinToggle, inputs.lemcalToggle, inputs.bannerToggle]
   .forEach(el => el && el.addEventListener('change', renderPreview));
 
-/* ===== Buttons ===== */
+/* Header buttons */
 btns.copyGmail.addEventListener('click', async () => {
   const htmlExport = buildEmailHTMLForExport(collectState(), { align: 'left' });
   const html = wrapForGmail(htmlExport);
   try { await copyHtmlToClipboard(html, ''); }
   catch { await navigator.clipboard.writeText(html); }
-  finally { showCopied(btns.copyGmail); }
+  finally {
+    const btn = btns.copyGmail;
+    if (!btn.dataset.label) btn.dataset.label = btn.textContent.trim();
+    const styles = getComputedStyle(btn);
+    btn.style.width = styles.width;
+    btn.disabled = true;
+    btn.classList.add('is-copied');
+    btn.innerHTML = `
+      <span class="copied-anim" aria-hidden="true">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 13l4 4L19 7"></path></svg>
+        <span>Copied</span>
+      </span>`;
+    window.setTimeout(() => {
+      btn.classList.remove('is-copied');
+      btn.disabled = false;
+      btn.textContent = btn.dataset.label;
+      requestAnimationFrame(() => { btn.style.width = ''; });
+    }, 1200);
+  }
 });
-
 btns.openGmail.addEventListener('click', () => {
   window.open('https://mail.google.com/mail/u/0/#settings/general', '_blank');
 });
 
-btns.reset.addEventListener('click', () => {
-  inputs.avatarFile.value = '';
-  inputs.bannerFile.value = '';
-  imageCache.avatar = AVATAR_DEFAULT_SRC || PLACEHOLDER_AVATAR;
-  imageCache.banner = BANNER_DEFAULT_SRC || PLACEHOLDER_BANNER;
-  fileBtns.avatar.textContent = 'Upload photo';
-  fileBtns.banner.textContent = 'Upload banner';
-  fileBtns.avatar.classList.remove('used');
-  fileBtns.banner.classList.remove('used');
-  if (inputs.bannerToggle) inputs.bannerToggle.checked = true;
-  renderPreview();
-});
-
-/* ===== Init ===== */
+/* Init */
 window.addEventListener('load', () => {
   applyBrand('lemlist');
-
   document.querySelectorAll('.brand-switch .seg').forEach(btn => {
     btn.addEventListener('click', (e) => {
       const k = e.currentTarget.dataset.brand;
       applyBrand(k);
     });
   });
-
   window.addEventListener('resize', renderPreview);
 });
