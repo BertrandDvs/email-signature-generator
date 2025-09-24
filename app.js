@@ -4,23 +4,23 @@ const PREVIEW_MAX_WIDTH = 500;
 
 /* ===== Supabase (config + helpers) ===== */
 const SB = {
-  url:    (window.SUPABASE_CFG && window.SUPABASE_CFG.url)    || '',
-  anon:   (window.SUPABASE_CFG && window.SUPABASE_CFG.anon)   || '',
-  bucket: (window.SUPABASE_CFG && window.SUPABASE_CFG.bucket) || 'signatures',
-  folder: (window.SUPABASE_CFG && window.SUPABASE_CFG.folder) || 'avatars',
+  url:            (window.SUPABASE_CFG && window.SUPABASE_CFG.url)            || '',
+  anon:           (window.SUPABASE_CFG && window.SUPABASE_CFG.anon)           || '',
+  bucket:         (window.SUPABASE_CFG && window.SUPABASE_CFG.bucket)         || 'signatures',
+  folder:         (window.SUPABASE_CFG && window.SUPABASE_CFG.folder)         || 'avatars',  // avatars/
+  bannersFolder:  (window.SUPABASE_CFG && window.SUPABASE_CFG.bannersFolder)  || 'banners',  // banners/
 };
 const supabase = (SB.url && SB.anon) ? window.supabase.createClient(SB.url, SB.anon) : null;
 
-function slugifyFilename(name='avatar'){
-  return name.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'').slice(0,40) || 'avatar';
+function slugifyFilename(name='asset'){
+  return name.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'').slice(0,40) || 'asset';
 }
-function fileExt(file){ return (file.name.match(/\.\w+$/) || [''])[0] || '.jpg'; }
+function fileExt(file){ return (file.name && file.name.match(/\.\w+$/) || [''])[0] || '.jpg'; }
 
-/** Upload avatar → retourne une URL https publique (Gmail OK) */
-async function uploadAvatarToSupabase(file, userHint='user') {
+/** Upload générique → retourne une URL https publique (Gmail OK) */
+async function uploadToSupabaseFolder(file, folderName, userHint='user') {
   if (!supabase) throw new Error('Supabase not configured');
 
-  // garde-fous
   const okTypes = ['image/jpeg','image/png','image/webp','image/gif'];
   const MAX_MB = 5;
   if (!okTypes.includes(file.type)) throw new Error('Format invalide (jpg/png/webp/gif)');
@@ -28,13 +28,13 @@ async function uploadAvatarToSupabase(file, userHint='user') {
 
   const id = (crypto && crypto.randomUUID) ? crypto.randomUUID() : String(Date.now());
   const base = slugifyFilename(userHint || 'user');
-  const path = `${SB.folder}/${base}-${id}${fileExt(file)}`;
+  const path = `${folderName}/${base}-${id}${fileExt(file)}`;
 
   const { error: upErr } = await supabase.storage
     .from(SB.bucket)
     .upload(path, file, {
       upsert: false,
-      cacheControl: '31536000',
+      cacheControl: '31536000', // 1 an
       contentType: file.type
     });
 
@@ -57,15 +57,15 @@ const BRAND_PROFILES = {
     },
     gradient: ['#316BFF','#134CDD'],
     assets: {
-      // locaux (preview) :
+      // locaux (preview)
       logoLocal:   'icons/logo.gif',
       avatarLocal: 'icons/avatar-placeholder.png',
       bannerLocal: 'icons/banner-placeholder.png',
-      // publics (GitHub Pages) :
+      // publics (GitHub Pages)
       logoPublic:   'logo.gif',
       avatarPublic: 'avatar-placeholder.png',
       bannerPublic: 'banner-placeholder.png',
-      // icônes sociaux (communs ici)
+      // icônes sociaux
       linkedinPublic: 'linkedin.png',
       lemcalPublic:   'lemcal.png'
     }
@@ -95,7 +95,7 @@ const BRAND_PROFILES = {
 const PUBLIC_ASSET_BASE = 'https://bertranddvs.github.io/email-signature-generator/icons/';
 
 /* >>> Cache-buster global <<< */
-const ASSET_VERSION = '2025-09-24-01'; // ← incrémente ce tag quand tu pousses de nouvelles images
+const ASSET_VERSION = '2025-09-22-01'; // incrémente quand tu pousses de nouvelles images
 
 /* ===== State brand/theme (mutable) ===== */
 let CURRENT_BRAND = BRAND_PROFILES.lemlist; // défaut
@@ -136,7 +136,7 @@ const inputs = {
   lemcalToggle: byId('lemcalToggle'),
   avatarFile: byId('avatarFile'),
   bannerFile: byId('bannerFile'),
-  bannerToggle: byId('bannerToggle'), // ← nouveau
+  bannerToggle: byId('bannerToggle'),
 };
 
 const fileBtns = {
@@ -240,23 +240,23 @@ function mapPublicAssets(profile){
 function sanitizeSrcForEmail(src, kind) {
   const q = ASSET_VERSION ? `?v=${encodeURIComponent(ASSET_VERSION)}` : '';
 
-  // URL absolue déjà https
+  // URL absolue déjà https (laisse passer Supabase & autres)
   if (src && /^https:\/\//i.test(src)) {
     try {
       const u = new URL(src);
-      // Si c'est GitHub Pages et pas déjà versionné, on ajoute v=...
+      // Si GitHub Pages et pas déjà versionné → ajoute v=...
       if (u.hostname.includes('github.io') && ASSET_VERSION && !u.searchParams.has('v')) {
         u.searchParams.set('v', ASSET_VERSION);
         return u.toString();
       }
     } catch {}
-    return src; // autre domaine (ex: Supabase) : on ne touche pas
+    return src;
   }
 
-  // Mapping "kind" → URL publique versionnée
+  // Mapping "kind" → URL publique versionnée (GitHub Pages)
   if (kind && PUBLIC_ASSETS_CURRENT[kind]) return PUBLIC_ASSETS_CURRENT[kind];
 
-  // Sinon, on reconstruit à partir du nom de fichier
+  // Sinon: reconstruit à partir du nom de fichier
   const file = String(src || '').split('/').pop();
   return PUBLIC_ASSET_BASE + file + q;
 }
@@ -524,30 +524,50 @@ inputs.avatarFile.addEventListener('change', async (e) => {
     return;
   }
 
-  // 1) Preview instantanée (confort)
+  // 1) Preview instantanée
   imageCache.avatar = await fileToDataURL(f);
   fileBtns.avatar.textContent = f.name;
   fileBtns.avatar.classList.add('used');
   renderPreview();
 
-  // 2) Upload Supabase → remplace par URL publique (Gmail-friendly)
+  // 2) Upload Supabase → remplace par URL publique
   try {
-    const hostedUrl = await uploadAvatarToSupabase(f, inputs.name?.value || 'user');
-    imageCache.avatar = hostedUrl;   // URL HTTPS publique
-    renderPreview();                 // optionnel
+    const hostedUrl = await uploadToSupabaseFolder(f, SB.folder, inputs.name?.value || 'user');
+    imageCache.avatar = hostedUrl;   // HTTPS public
+    renderPreview();
   } catch (err) {
     console.error('[Supabase upload failed]', err);
     alert("Échec de l'hébergement de la photo. La signature utilisera l'image locale (qui ne s'affichera pas dans Gmail).");
   }
 });
 
-/* BANNER: inchangé (local preview seulement) */
+/* BANNER: preview immédiate + upload Supabase → URL publique */
 inputs.bannerFile.addEventListener('change', async (e) => {
   const f = e.target.files?.[0];
-  imageCache.banner = f ? await fileToDataURL(f) : (BANNER_DEFAULT_SRC || PLACEHOLDER_BANNER);
-  fileBtns.banner.textContent = f ? f.name : 'Upload banner';
-  fileBtns.banner.classList.toggle('used', !!f);
+
+  if (!f) {
+    imageCache.banner = BANNER_DEFAULT_SRC || PLACEHOLDER_BANNER;
+    fileBtns.banner.textContent = 'Upload banner';
+    fileBtns.banner.classList.remove('used');
+    renderPreview();
+    return;
+  }
+
+  // 1) Preview instantanée
+  imageCache.banner = await fileToDataURL(f);
+  fileBtns.banner.textContent = f.name;
+  fileBtns.banner.classList.add('used');
   renderPreview();
+
+  // 2) Upload Supabase → remplace par URL publique
+  try {
+    const hostedUrl = await uploadToSupabaseFolder(f, SB.bannersFolder, (inputs.name?.value || 'user') + '-banner');
+    imageCache.banner = hostedUrl;   // HTTPS public
+    renderPreview();
+  } catch (err) {
+    console.error('[Supabase banner upload failed]', err);
+    alert("Échec de l'hébergement de la bannière. La signature utilisera l'image locale (qui ne s'affichera pas dans Gmail).");
+  }
 });
 
 /* ===== Inputs change ===== */
