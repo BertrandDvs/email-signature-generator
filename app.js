@@ -7,10 +7,11 @@ const SB = {
   url:            (window.SUPABASE_CFG && window.SUPABASE_CFG.url)            || '',
   anon:           (window.SUPABASE_CFG && window.SUPABASE_CFG.anon)           || '',
   bucket:         (window.SUPABASE_CFG && window.SUPABASE_CFG.bucket)         || 'signatures',
-  folder:         (window.SUPABASE_CFG && window.SUPABASE_CFG.folder)         || 'avatars',  // avatars/
-  bannersFolder:  (window.SUPABASE_CFG && window.SUPABASE_CFG.bannersFolder)  || 'banners',  // banners/
+  folder:         (window.SUPABASE_CFG && window.SUPABASE_CFG.folder)         || 'avatars',   // avatars/
+  bannersFolder:  (window.SUPABASE_CFG && window.SUPABASE_CFG.bannersFolder)  || 'banners',   // banners/
 };
 const supabase = (SB.url && SB.anon) ? window.supabase.createClient(SB.url, SB.anon) : null;
+console.log('[SB CFG]', SB);
 
 function slugifyFilename(name='asset'){
   return name.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'').slice(0,40) || 'asset';
@@ -30,7 +31,9 @@ async function uploadToSupabaseFolder(file, folderName, userHint='user') {
   const base = slugifyFilename(userHint || 'user');
   const path = `${folderName}/${base}-${id}${fileExt(file)}`;
 
-  const { error: upErr } = await supabase.storage
+  console.log('[UPLOAD]', { bucket: SB.bucket, path, type: file.type, size: file.size });
+
+  const { data, error } = await supabase.storage
     .from(SB.bucket)
     .upload(path, file, {
       upsert: false,
@@ -38,10 +41,12 @@ async function uploadToSupabaseFolder(file, folderName, userHint='user') {
       contentType: file.type
     });
 
-  if (upErr) throw upErr;
+  console.log('[UPLOAD RESULT]', { data, error });
+  if (error) throw error;
 
-  const { data } = supabase.storage.from(SB.bucket).getPublicUrl(path);
-  return data.publicUrl; // https public
+  const pub = supabase.storage.from(SB.bucket).getPublicUrl(path);
+  console.log('[PUBLIC URL]', pub);
+  return pub.data.publicUrl; // https public
 }
 
 /* ============================================================================
@@ -561,7 +566,11 @@ inputs.bannerFile.addEventListener('change', async (e) => {
 
   // 2) Upload Supabase → remplace par URL publique
   try {
-    const hostedUrl = await uploadToSupabaseFolder(f, SB.bannersFolder, (inputs.name?.value || 'user') + '-banner');
+    const hostedUrl = await uploadToSupabaseFolder(
+      f,
+      SB.bannersFolder,
+      (inputs.name?.value || 'user') + '-banner'
+    );
     imageCache.banner = hostedUrl;   // HTTPS public
     renderPreview();
   } catch (err) {

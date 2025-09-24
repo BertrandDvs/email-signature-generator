@@ -127,26 +127,17 @@
     </div>
   </section>
 
-  <!-- Supabase client + config (AJOUT) -->
+  <!-- Supabase client + config (UN SEUL bloc) -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
     window.SUPABASE_CFG = {
       url: 'https://gdkuxrrxwnufdbpqooim.supabase.co',
       anon: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imdka3V4cnJ4d251ZmRicHFvb2ltIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg3Mjk3MTYsImV4cCI6MjA3NDMwNTcxNn0.ZGKsAy-76dBUtnOtqEpccaRvcKejA0VIpQl8owNI9VU',
       bucket: 'signatures',
-      folder: 'avatars'
+      folder: 'avatars',        // uploads avatar -> signatures/avatars/
+      bannersFolder: 'banners'  // uploads banner -> signatures/banners/
     };
   </script>
-
-  <script>
-  window.SUPABASE_CFG = {
-    url: 'https://gdkuxrrxwnufdbpqooim.supabase.co',
-    anon: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imdka3V4cnJ4d251ZmRicHFvb2ltIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg3Mjk3MTYsImV4cCI6MjA3NDMwNTcxNn0.ZGKsAy-76dBUtnOtqEpccaRvcKejA0VIpQl8owNI9VU',
-    bucket: 'signatures',
-    folder: 'banners',
-  };
-</script>
-
 
   <script src="app.js"></script>
 </body>
