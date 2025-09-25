@@ -1,5 +1,5 @@
 /* ===== Basic config ===== */
-const BASE_PREVIEW_SCALE = 0.92;
+const BASE_PREVIEW_SCALE = 0.90;
 const PREVIEW_MAX_WIDTH = 500;
 
 /* ===== Supabase (config + helpers) ===== */
