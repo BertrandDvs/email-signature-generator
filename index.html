@@ -94,21 +94,26 @@
           <!-- Uploads (2 colonnes, chaque bouton pleine largeur) -->
           <div class="row grid-2">
             <!-- Photo -->
-            <div>
-              <label>Photo</label>
-              <div class="file-input" data-kind="avatar">
-                <input type="file" id="avatarFile" accept="image/*" />
-                <button type="button" class="btn file-btn" id="avatarBtn">
-                  <span class="file-label" title="Upload photo">Upload photo</span>
-                </button>
-                <button type="button" class="clear-btn" id="avatarClear" aria-label="Remove photo" title="Remove photo">
-                  <svg viewBox="0 0 24 24" aria-hidden="true">
-                    <circle cx="12" cy="12" r="10"></circle>
-                    <path d="M8 8 L16 16 M16 8 L8 16"></path>
-                  </svg>
-                </button>
-              </div>
-            </div>
+<div>
+  <label>Photo</label>
+  <div class="file-input" data-kind="avatar">
+    <input type="file" id="avatarFile" accept="image/*" />
+    <button type="button" class="btn file-btn" id="avatarBtn">
+      <span class="file-label" title="Upload photo">Upload photo</span>
+    </button>
+    <button type="button" class="clear-btn" id="avatarClear" aria-label="Remove photo" title="Remove photo">
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <circle cx="12" cy="12" r="10"></circle>
+        <path d="M8 8 L16 16 M16 8 L8 16"></path>
+      </svg>
+    </button>
+  </div>
+  <!-- ✨ Message d’erreur (affiché si non carré) -->
+  <p id="avatarError" class="input-error" aria-live="polite" hidden>
+    L’image doit être carrée (largeur = hauteur).
+  </p>
+</div>
+
 
             <!-- Banner -->
             <div>

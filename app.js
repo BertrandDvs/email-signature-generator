@@ -191,6 +191,8 @@ const fileLabels = {
   avatar: fileWrappers.avatar?.querySelector('.file-label'),
   banner: fileWrappers.banner?.querySelector('.file-label'),
 };
+/* ✨ zone d'affichage d'erreur */
+const errors = { avatar: document.getElementById('avatarError') };
 
 const els  = { previewCard: byId('previewCard'), preview: byId('signaturePreview') };
 const btns = { copyGmail: byId('copyGmail'), openGmail: byId('openGmail') };
@@ -244,6 +246,8 @@ function setFileUI(kind, fileName){
   const btn  = (kind === 'avatar') ? fileBtns.avatar : fileBtns.banner;
   const labelEl = fileLabels[kind];
   if (!wrap || !btn || !labelEl) return;
+
+  // ❌ Ne pas masquer l'erreur ici — on laisse les handlers gérer
 
   if (fileName){
     const truncated = truncateMiddle(fileName, 36);
@@ -538,8 +542,13 @@ function applyBrand(key){
 fileBtns.avatar.addEventListener('click', () => inputs.avatarFile.click());
 fileBtns.banner.addEventListener('click', () => inputs.bannerFile.click());
 
+/* --- AVATAR with square-check (fix: ordre + pas de masquage auto) --- */
 inputs.avatarFile.addEventListener('change', async (e) => {
   const f = e.target.files?.[0];
+
+  // reset erreur à chaque tentative
+  if (errors.avatar) errors.avatar.hidden = true;
+
   if (!f) {
     imageCache.avatar = AVATAR_DEFAULT_SRC || PLACEHOLDER_AVATAR;
     setFileUI('avatar', null);
@@ -547,12 +556,48 @@ inputs.avatarFile.addEventListener('change', async (e) => {
     return;
   }
 
+  // Vérifie que l'image est carrée AVANT toute prévisualisation/upload
+  try {
+    const img = await loadImageFromFile(f);
+    const w = img.naturalWidth || img.width;
+    const h = img.naturalHeight || img.height;
+    if (w !== h) {
+      // reset UI + input
+      inputs.avatarFile.value = '';
+      imageCache.avatar = AVATAR_DEFAULT_SRC || PLACEHOLDER_AVATAR;
+      setFileUI('avatar', null);
+      renderPreview();
+
+      // affiche l’erreur (et NE PAS l'effacer dans setFileUI)
+      if (errors.avatar) {
+        errors.avatar.textContent = `The image must be square (actuel: ${w}×${h}).`;
+        errors.avatar.hidden = false;
+      }
+      return;
+    }
+  } catch {
+    inputs.avatarFile.value = '';
+    imageCache.avatar = AVATAR_DEFAULT_SRC || PLACEHOLDER_AVATAR;
+    setFileUI('avatar', null);
+    renderPreview();
+    if (errors.avatar) {
+      errors.avatar.textContent = `Unable to read the image. Please try again with a valid file.`;
+      errors.avatar.hidden = false;
+    }
+    return;
+  }
+
+  // ✅ OK carré → on peut continuer (aperçu immédiat)
   imageCache.avatar = await fileToDataURL(f);
   setFileUI('avatar', f.name);
   renderPreview();
 
+  // puis compression + upload
   try {
-    const { blob } = await compressImage(f, { maxW: AVATAR_MAX_SIDE, maxH: AVATAR_MAX_SIDE, quality: WEBP_QUALITY_AVATAR, prefer: 'image/webp' });
+    const { blob } = await compressImage(f, {
+      maxW: AVATAR_MAX_SIDE, maxH: AVATAR_MAX_SIDE,
+      quality: WEBP_QUALITY_AVATAR, prefer: 'image/webp'
+    });
     const newName = `${slugifyFilename(inputs.name?.value || 'user')}-avatar.webp`;
     const webpFile = blobToFile(blob, newName);
 
@@ -565,6 +610,7 @@ inputs.avatarFile.addEventListener('change', async (e) => {
   }
 });
 
+/* --- BANNER (inchangé) --- */
 inputs.bannerFile.addEventListener('change', async (e) => {
   const f = e.target.files?.[0];
   if (!f) {
@@ -598,6 +644,7 @@ clearBtns.avatar.addEventListener('click', (e) => {
   inputs.avatarFile.value = '';
   imageCache.avatar = AVATAR_DEFAULT_SRC || PLACEHOLDER_AVATAR;
   setFileUI('avatar', null);
+  if (errors.avatar) errors.avatar.hidden = true;
   renderPreview();
 });
 clearBtns.banner.addEventListener('click', (e) => {
