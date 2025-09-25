@@ -10,20 +10,24 @@
 </head>
 <body>
   <header class="app-header">
-    <h1>Email Signature Generator</h1>
-    <div class="actions">
-      <div class="brand-switch" role="tablist" aria-label="Brand switch">
-        <button class="seg is-active" id="brandLemlist" data-brand="lemlist" role="tab" aria-selected="true" title="lemlist">
-          <img src="icons/lemlist-app.png" alt="lemlist" width="24" height="24" />
-        </button>
-        <button class="seg" id="brandTaplio" data-brand="taplio" role="tab" aria-selected="false" title="Taplio">
-          <img src="icons/taplio-app.png" alt="Taplio" width="24" height="24" />
-        </button>
-      </div>
-      <button class="btnprim" id="copyGmail">Copy for Gmail</button>
-      <button class="btn ghost" id="openGmail" title="Open Gmail Settings">Open Gmail</button>
+  <h1>Email Signature Generator</h1>
+  <div class="actions">
+    <div class="brand-switch" role="tablist" aria-label="Brand switch">
+      <button class="seg is-active" id="brandLemlist" data-brand="lemlist" role="tab" aria-selected="true" title="lemlist">
+        <img src="icons/lemlist-app.png" alt="lemlist" width="24" height="24" />
+      </button>
+      <button class="seg" id="brandTaplio" data-brand="taplio" role="tab" aria-selected="false" title="Taplio">
+        <img src="icons/taplio-app.png" alt="Taplio" width="24" height="24" />
+      </button>
     </div>
-  </header>
+
+    <!-- tes 2 boutons existants + le nouveau juste ici -->
+    <button class="btnprim" id="copyGmail">Copy for Gmail</button>
+    <button class="btn ghost" id="openGmail" title="Open Gmail Settings">Open Gmail</button>
+    <button class="btn" id="gmailTutorialBtn" title="Tutoriel pas-à-pas">Tutorial</button>
+  </div>
+</header>
+
 
   <main class="wrap">
     <!-- Preview -->
@@ -147,6 +151,76 @@
     };
   </script>
 
-  <script src="app.js"></script>
+<!-- Gmail Tutorial Modal -->
+<div id="gmailTutorialModal" class="modal" aria-hidden="true" role="dialog" aria-labelledby="gmailTutorialTitle">
+  <div class="modal__backdrop" data-close="true"></div>
+  <div class="modal__dialog" role="document">
+    <header class="modal__header">
+      <h2 id="gmailTutorialTitle" tabindex="-1">Add your signature in Gmail</h2>
+      <button class="modal__close" aria-label="Close tutorial" data-close="true">×</button>
+    </header>
+
+    <div class="modal__body">
+      <ol class="steps">
+        <!-- New step 1 (replaces old 1–3) -->
+        <li>
+          Click <strong>“Open Gmail”</strong> — you’ll land directly on <em>Settings &gt; General</em> in the right section for signatures.
+          <figure class="step-figure">
+            <img src="icons/tutorial-step1.png" alt="Gmail Settings — General tab opened" />
+          </figure>
+        </li>
+
+        <li>
+          In the <strong>Signature</strong> section, click <strong>“Create new”</strong> and name your signature.
+          <figure class="step-figure">
+            <img src="icons/tutorial-step2.png" alt="Create a new signature in Gmail" />
+          </figure>
+        </li>
+
+        <li>
+          Come back here, click <strong>“Copy for Gmail”</strong>, then return to Gmail and <strong>paste</strong> into the signature editor.
+          <figure class="step-figure">
+            <img src="icons/tutorial-step3.png" alt="Paste the signature into Gmail editor" />
+          </figure>
+        </li>
+
+        <li>
+          Under <strong>Signature defaults</strong>, select this signature for <em>New emails</em> and <em>Replies/forwards</em>.
+          <figure class="step-figure">
+            <img src="icons/tutorial-step4.png" alt="Set signature defaults in Gmail" />
+          </figure>
+        </li>
+
+        <li>
+          Scroll down and click <strong>“Save changes”</strong>, then compose a new email to test.
+          <figure class="step-figure">
+            <img src="icons/tutorial-step5.png" alt="Save changes and test the signature" />
+          </figure>
+        </li>
+      </ol>
+
+      <!-- Specs instead of troubleshooting -->
+      <div class="specs">
+        <h3>Image specs to respect</h3>
+        <ul>
+          <li><strong>Avatar</strong>: square, recommended <code>89×89</code> to <code>600×600</code> px, rounded corners OK.</li>
+          <li><strong>Banner</strong>: recommended <code>500×160</code> px (keeps emails light and crisp).</li>
+          <li><strong>Formats</strong>: <code>PNG</code>, <code>JPG</code>, <code>WebP</code>.</li>
+          <li><strong>Max size</strong>: up to <code>8&nbsp;MB</code> per file (uploads are compressed automatically).</li>
+          <li><strong>Keep it light</strong>: avoid huge images to prevent email bloat.</li>
+        </ul>
+      </div>
+    </div>
+
+    <footer class="modal__footer">
+      <button class="btn ghost" id="openGmailFromModal">Open Gmail</button>
+      <!-- No Close button here on purpose -->
+    </footer>
+  </div>
+</div>
+
+
+ <script src="app.js"></script>
+
 </body>
 </html>

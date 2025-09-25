@@ -255,3 +255,94 @@ input[type="text"], input[type="email"], input[type="url"], input[type="tel"], i
 
 /* Espace entre "Banner (500x160)" et le bouton "Upload banner" */
 .grid-2 .social-head + .file-input { margin-top: 6px; }
+
+/* ===== Modal (Tutoriel Gmail) ===== */
+.modal { position: fixed; inset: 0; display: none; z-index: 1000; }
+.modal.is-open { display: block; }
+.modal__backdrop { position: absolute; inset: 0; background: rgba(0,0,0,.45); }
+.modal__dialog {
+  position: relative;
+  max-width: 720px; width: calc(100% - 2rem);
+  margin: 4vh auto; background: #fff; border-radius: 16px;
+  box-shadow: 0 10px 30px rgba(0,0,0,.2);
+  display: flex; flex-direction: column; max-height: 92vh;
+}
+.modal__header, .modal__footer { padding: 16px 20px; }
+.modal__header { border-bottom: 1px solid var(--border); }
+.modal__footer { border-top: 1px solid var(--border); }
+.modal__body { padding: 16px 20px; overflow: auto; }
+.modal__close {
+  border: 0; background: transparent; font-size: 24px; line-height: 1;
+  cursor: pointer; margin-left: auto;
+}
+.steps { display: grid; gap: 12px; padding-left: 1.2rem; }
+.steps li { line-height: 1.5; }
+.tip { margin-top: 12px; border: 1px solid #eee; border-radius: 10px; padding: 10px 12px; background: #fafafa; }
+
+@media (max-width: 520px) {
+  .modal__dialog { margin: 2vh auto; }
+}
+
+/* Header of modal: title left, cross right */
+.modal__header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border-bottom: 1px solid var(--border);
+  padding: 16px 20px;
+}
+.modal__header h2 {
+  margin: 0;
+  font-size: 18px;
+  line-height: 1.2;
+  font-weight: 700;
+  flex: 1; /* push the close button to the right */
+}
+.modal__close {
+  border: 0;
+  background: transparent;
+  font-size: 24px;
+  line-height: 1;
+  cursor: pointer;
+  margin-left: auto; /* ensure it stays at far right */
+  padding: 2px 6px;
+}
+
+/* Body and footer keep your existing styles; add figure styling */
+.step-figure {
+  margin: 10px 0 0;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 8px;
+  background: #fff;
+}
+.step-figure img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: 8px;
+}
+.step-figure figcaption {
+  font-size: 12px;
+  color: #697586;
+  margin-top: 6px;
+}
+
+/* Specs card replacing troubleshooting */
+.specs {
+  margin-top: 16px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px 14px;
+  background: #FAFAFA;
+}
+.specs h3 {
+  margin: 0 0 8px;
+  font-size: 14px;
+}
+.specs ul {
+  margin: 0;
+  padding-left: 18px;
+  display: grid;
+  gap: 6px;
+}

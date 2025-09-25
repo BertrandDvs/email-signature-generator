@@ -655,3 +655,56 @@ window.addEventListener('load', () => {
   });
   window.addEventListener('resize', renderPreview);
 });
+
+/* ===== Modal Tutoriel Gmail ===== */
+(function(){
+  const modal = document.getElementById('gmailTutorialModal');
+  const openBtn = document.getElementById('gmailTutorialBtn');
+  const openGmailFromModal = document.getElementById('openGmailFromModal');
+  const backdrop = modal?.querySelector('.modal__backdrop');
+  const closeEls = modal?.querySelectorAll('[data-close]');
+  let lastFocused = null;
+
+  if (!modal || !openBtn) return;
+
+  const openModal = () => {
+    lastFocused = document.activeElement;
+    modal.classList.add('is-open');
+    modal.setAttribute('aria-hidden', 'false');
+    const title = document.getElementById('gmailTutorialTitle');
+    title && title.focus({ preventScroll: true });
+    document.body.style.overflow = 'hidden';
+  };
+  const closeModal = () => {
+    modal.classList.remove('is-open');
+    modal.setAttribute('aria-hidden', 'true');
+    document.body.style.overflow = '';
+    lastFocused && lastFocused.focus();
+  };
+
+  openBtn.addEventListener('click', openModal);
+  backdrop && backdrop.addEventListener('click', closeModal);
+  closeEls && closeEls.forEach(el => el.addEventListener('click', closeModal));
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && modal.classList.contains('is-open')) {
+      e.preventDefault(); closeModal();
+    }
+  });
+
+  // Ouvrir directement les paramètres Gmail depuis la modal (même URL que ton bouton existant)
+  openGmailFromModal?.addEventListener('click', () => {
+    window.open('https://mail.google.com/mail/u/0/#settings/general', '_blank');
+  });
+
+  // Focus trap minimal dans la modal
+  modal.addEventListener('keydown', (e) => {
+    if (e.key !== 'Tab') return;
+    const focusables = modal.querySelectorAll('button, [href], summary, input, select, textarea, [tabindex]:not([tabindex="-1"])');
+    const list = Array.from(focusables).filter(el => !el.hasAttribute('disabled'));
+    if (!list.length) return;
+    const first = list[0], last = list[list.length - 1];
+    if (e.shiftKey && document.activeElement === first) { last.focus(); e.preventDefault(); }
+    else if (!e.shiftKey && document.activeElement === last) { first.focus(); e.preventDefault(); }
+  });
+})();
