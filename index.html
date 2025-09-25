@@ -91,50 +91,45 @@
 
           <!-- Uploads -->
           <div class="row grid-2">
-            <!-- Photo -->
-            <div>
-              <label>Photo</label>
-              <div class="file-input" data-kind="avatar">
-                <input type="file" id="avatarFile" accept="image/*" />
-                <button type="button" class="btn file-btn" id="avatarBtn">
-                  <span class="file-label" title="Upload photo">Upload photo</span>
-                </button>
-                <button type="button" class="clear-btn" id="avatarClear" aria-label="Remove photo" title="Remove photo">
-                  <svg viewBox="0 0 24 24" aria-hidden="true">
-                    <circle cx="12" cy="12" r="10"></circle>
-                    <path d="M8 8 L16 16 M16 8 L8 16"></path>
-                  </svg>
-                </button>
-              </div>
-              <p id="avatarError" class="input-error" aria-live="polite" hidden>
-                L’image doit être carrée (largeur = hauteur).
-              </p>
-            </div>
+  <!-- Colonne gauche : Photo -->
+  <div>
+    <div class="social-head">
+      <label for="avatarFile">Photo</label>
+      <span class="switch-placeholder" aria-hidden="true"></span>
+    </div>
+    <div class="file-input" data-kind="avatar">
+      <input type="file" id="avatarFile" accept="image/*" />
+      <button type="button" class="btn file-btn" id="avatarBtn">
+        <span class="file-label">Upload photo</span>
+      </button>
+      <button type="button" class="clear-btn" id="avatarClear">×</button>
+    </div>
+    <p id="avatarError" class="input-error" hidden>
+      Image must be square (width = height).
+    </p>
+  </div>
 
-            <!-- Banner -->
-            <div>
-              <div class="social-head">
-                <label>Banner (500x160)</label>
-                <label class="switch">
-                  <input type="checkbox" id="bannerToggle" checked />
-                  <span class="slider"></span>
-                </label>
-              </div>
+  <!-- Colonne droite : Banner -->
+  <div>
+    <div class="social-head">
+      <label>Banner (500×160)</label>
+      <label class="switch">
+        <input type="checkbox" id="bannerToggle" checked />
+        <span class="slider"></span>
+      </label>
+    </div>
+    <div class="file-input" data-kind="banner">
+      <input type="file" id="bannerFile" accept="image/*" />
+      <button type="button" class="btn file-btn" id="bannerBtn">
+        <span class="file-label">Upload banner</span>
+      </button>
+      <button type="button" class="clear-btn" id="bannerClear">×</button>
+    </div>
+  </div>
+</div>
 
-              <div class="file-input" data-kind="banner">
-                <input type="file" id="bannerFile" accept="image/*" />
-                <button type="button" class="btn file-btn" id="bannerBtn">
-                  <span class="file-label" title="Upload banner">Upload banner</span>
-                </button>
-                <button type="button" class="clear-btn" id="bannerClear" aria-label="Remove banner" title="Remove banner">
-                  <svg viewBox="0 0 24 24" aria-hidden="true">
-                    <circle cx="12" cy="12" r="10"></circle>
-                    <path d="M8 8 L16 16 M16 8 L8 16"></path>
-                  </svg>
-                </button>
-              </div>
-            </div>
-          </div>
+
+
         </div>
       </form>
     </aside>
