@@ -17,8 +17,8 @@ body{
   color: var(--text);
   background-color: #fdfdfd;
   opacity: 0.95;
-  background-image: radial-gradient(#dedede 1px, #fdfdfd 1px);
-  background-size: 15px 15px;
+  background-image: radial-gradient(#f1f1f1 1px, #fdfdfd 1px);
+  background-size: 12px 12px;
 }
 
 /* Header */
@@ -216,7 +216,6 @@ input[type="text"], input[type="email"], input[type="url"], input[type="tel"], i
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  padding: 0;
   border: #fff;
 }
 .file-input.has-file .clear-btn{ display: inline-flex; }
@@ -364,13 +363,7 @@ input[type="text"], input[type="email"], input[type="url"], input[type="tel"], i
 }
 .cropper-toolbar .group { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 .cropper-toolbar .inline { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color:#213856; }
-.cropper-toolbar button {
-  padding: 8px 12px; border-radius: 10px; border: 1px solid var(--border); background: #fff; cursor: pointer;
-  color:#17161B;
-}
-.cropper-toolbar button:is(:hover,:focus){ border-color:#cbcbcb; }
-.cropper-toolbar button.primary{ color: white; border: 1px solid var(--Primary-300, #316BFF);
-  background: linear-gradient(0deg, #316BFF -10%, #477BFF 100%); box-shadow: 0 0 6px 0 rgba(0,0,0,.02), 0 2px 4px 0 rgba(0,0,0,.08); }
+
 .cropper-toolbar input[type="number"], .cropper-toolbar select, .cropper-toolbar input[type="range"]{
   height: 34px; border-radius: 8px; border: 1px solid #ddd; padding: 0 8px; background:#fff; color:#17161B;
 }
@@ -384,4 +377,3 @@ input[type="text"], input[type="email"], input[type="url"], input[type="tel"], i
   width:16px; height:16px; border-radius:50%; background:#316BFF; border:2px solid #fff;
 }
 .cropper-toolbar :is(button,select,input):focus { outline: 3px solid #00A2FF33; outline-offset: 2px; }
-

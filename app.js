@@ -129,7 +129,7 @@ const BRAND_PROFILES = {
   },
   taplio: {
     key: 'taplio', site: 'www.taplio.com',
-    colors: { separator:'#E6E6E6', name:'#1A1333', role:'#6F6B80', site:'#9BA0AC', text:'#14121A', muted:'#6F6B80', accent:'#7C4DFF' },
+    colors: { separator:'#E6E6E6', name:'#213856', role:'#566F8F', site:'#9BA0AC', text:'#14121A', muted:'#566F8F', accent:'#7C4DFF' },
     gradient: ['#0568CC','#54A9FF'],
     assets: {
       logoLocal:   'icons/taplio-logo.gif',
@@ -839,8 +839,8 @@ inputs.bannerFile.addEventListener('change', async (e) => {
     return;
   }
 
-  // target ratio 500:160 ≈ 3.125
-  const R = 500/160;
+  // target ratio 500:100 ≈ 3.125
+  const R = 500/100;
   const edit = await window.openImageEditor(f, { exportSize: 1000, ratio: R, lockRatio: true });
   if (edit?.cancelled) {
     inputs.bannerFile.value = '';
