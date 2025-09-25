@@ -36,25 +36,15 @@ body{
   transition: background .2s ease, border-color .2s ease, color .2s ease;
 }
 .btn:hover{ border-color:#cbcbcb }
-.btn.ghost{ background:linear-gradient(0deg, #FBFBFB -10
-  0%, #FFF 100%);
-}
+.btn.ghost{ background:linear-gradient(0deg, #FBFBFB 0%, #FFF 100%); }
 
 /* Primary gradient button */
 .btnprim {
   padding:8px 12px; border-radius:10px; font-size:14px; line-height:24px;
   color: white;
   border: 1px solid var(--Primary-300, #316BFF);
-  background: linear-gradient(0deg, var(--Button-button-primary-300, #316BFF) -10%, var(--Button-button-primary-275, #477BFF) 100%);
+  background: linear-gradient(0deg, #316BFF -10%, #477BFF 100%);
   box-shadow: 0 0 6px 0 rgba(0, 0, 0, 0.02), 0 2px 4px 0 rgba(0, 0, 0, 0.08);
-  transition: background .2s ease, border-color .2s ease, color .2s ease;
-}
-
-.btnprim:hover {
-  cursor: pointer;
-  border: 1px solid var(--primary-color);
-  background: linear-gradient(0deg, var(--Colors-Button-button-primary-300, #316BFF) 0%, var(--Colors-Button-button-primary-325, #1F5EFF) 100%);
-  box-shadow: 0 0 6px 0 var(--shadow-2), 0 2px 4px 0 var(--shadow-8);
 }
 
 /* Layout */
@@ -76,7 +66,7 @@ body{
   border-radius:16px;
   box-shadow: 0 4px 16px rgba(0,0,0,.08);
   padding:40px;
-  overflow: hidden; /* garde tout dans la carte */
+  overflow: hidden;
 }
 .panel form{ padding: 20px; }
 
@@ -110,7 +100,6 @@ body{
 .grid-2{
   display:grid; grid-template-columns: 1fr 1fr; gap:12px;
 }
-/* *** IMPORTANT *** : autorise les colonnes à rétrécir pour éviter le dépassement */
 .grid-2 > div{ min-width: 0; }
 
 .row{ margin:0; }
@@ -130,7 +119,7 @@ input[type="text"], input[type="email"], input[type="url"], input[type="tel"], i
 }
 .social-head label{ margin:0; }
 
-/* Toggle 32x16 */
+/* Toggle */
 .switch{
   --w: 28px; --h: 14px; --pad: 2px; --travel: calc(var(--w) - var(--h));
   position: relative; display: inline-block; width: var(--w); height: var(--h);
@@ -140,128 +129,51 @@ input[type="text"], input[type="email"], input[type="url"], input[type="tel"], i
   position: absolute; inset:0; cursor: pointer; border-radius: 100px;
   background: linear-gradient(45deg,#eaf0f6,#adadad);
   box-shadow: inset 0 1px 1px rgba(255,255,255,.80), inset 0 -1.5px 2px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.10);
-  transition: background .2s ease, box-shadow .2s ease;
 }
 .switch input:checked + .slider{
   background: linear-gradient(45deg,#2f7dff,#1a56f5);
-  box-shadow: inset 0 1px 1px rgba(255,255,255,.55), inset 0 -2px 3px rgba(0,0,0,.25), 0 2px 4px rgba(31,102,255,.30);
 }
 .slider::before{
   content:""; position:absolute; left: var(--pad); top: var(--pad);
   width: calc(var(--h) - var(--pad) * 2); height: calc(var(--h) - var(--pad) * 2);
-  border-radius: 100px;
-  background: radial-gradient(120% 120% at 30% 25%,#ffffff 0%,#eaf0f6 70%,#d3dbe6 100%);
-  box-shadow: 0 1px 2px rgba(0,0,0,.20), inset 0 1px 0 rgba(255,255,255,.85), inset 0 -2px 4px rgba(0,0,0,.10);
-  transition: transform .22s ease, background .2s ease, box-shadow .2s ease;
+  border-radius: 100px; background: #fff;
+  transition: transform .22s ease;
 }
-.switch:not(:has(input:checked)) .slider::before{ background: #585858; }
 .switch input:checked + .slider::before{ transform: translateX(var(--travel)); }
-.switch input:focus-visible + .slider{ outline: 2px solid #5b9dff; outline-offset: 2px; }
 
-/* ===== Upload full-width + truncation + clear button ===== */
-.file-input{
-  position: relative;
-  display: flex;
-  align-items: center;
-  width: 100%;
-  max-width: 100%;
-}
+/* Upload */
+.file-input{ position: relative; display: flex; align-items: center; width: 100%; max-width: 100%; }
 .file-input input[type="file"]{ position:absolute; left:-9999px; }
-
 .file-btn{
-  flex: 1 1 auto;
-  width: 100%;
-  max-width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: flex-start; /* évite la poussée */
-  gap: 8px;
-  padding-right: 44px; /* place pour la croix */
-  height:40px; line-height:24px;
-  overflow: hidden; /* empêche tout dépassement visuel */
+  flex: 1 1 auto; width: 100%; max-width: 100%;
+  display: flex; align-items: center; justify-content: flex-start; gap: 8px;
+  padding-right: 44px; height:40px; line-height:24px; overflow: hidden;
 }
-
-/* texte tronqué uniquement (bouton fixe) */
 .file-btn .file-label{
-  flex: 1 1 auto;
-  min-width: 0;          /* clé pour l’ellipsis dans flex/grid */
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-  text-align: left;
+  flex: 1 1 auto; min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; text-align: left;
 }
-
-/* état "fichier choisi" */
-.file-btn.used{
-  background: #F2F7FF;
-  border-color: var(--accent);
-  color: #134CDD;
-}
-
-/* bouton clear circulaire */
+.file-btn.used{ background: #F2F7FF; border-color: var(--accent); color: #134CDD; }
 .clear-btn{
-  position: absolute;
-  right: 6px;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 24px; height: 24px;
-  border-radius: 999px;
-  display: none; /* visible quand has-file */
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  padding: 0;
-  border: #fff;
+  position: absolute; right: 6px; top: 50%; transform: translateY(-50%);
+  width: 24px; height: 24px; border-radius: 999px; display: none; align-items: center; justify-content: center; cursor: pointer; padding: 0; border: #fff;
 }
 .file-input.has-file .clear-btn{ display: inline-flex; }
-.clear-btn svg{
-  width: 16px; height: 16px;
-  stroke: #fff; fill: #5B6B7D; stroke-width: 2;
-  stroke-linecap: round; stroke-linejoin: round;
-  pointer-events: none;
-}
-.clear-btn:hover{ 
-  border-color: #d0d0d0; background: #fafafa; 
-}
-
-
-
-/* Highlight (preview only) */
-.preview .preview-card { position: relative; }
-.spotlight { position: absolute; border-radius: 10px; pointer-events: none; z-index: 5;
-  box-shadow: 0 0 0 0 rgba(49,107,255,.20), 0 0 0 2px rgba(49,107,255,.85) inset; animation: haloPulse 900ms ease-out forwards; }
-@keyframes haloPulse { 0%{ box-shadow: 0 0 0 0 rgba(49,107,255,.25), 0 0 0 2px rgba(49,107,255,.90) inset; opacity:1;}
-  60%{ box-shadow: 0 0 0 12px rgba(49,107,255,.18), 0 0 0 2px rgba(49,107,255,.65) inset;}
-  100%{ box-shadow:0 0 0 22px rgba(49,107,255,0), 0 0 0 2px rgba(49,107,255,0) inset; opacity:0;}}
-.spotlight-tip{ position:absolute; top:-8px; left:0; transform:translateY(-100%); background:#111; color:#fff; font-size:12px; line-height:1; padding:6px 8px; border-radius:8px; white-space:nowrap; opacity:0; z-index:6; animation: tipFade 900ms ease-out forwards; }
-.spotlight-tip::after{ content:""; position:absolute; left:10px; top:100%; border:6px solid transparent; border-top-color:#111; }
-.spotlight-tip.below{ top:auto; bottom:-8px; transform:translateY(100%); }
-.spotlight-tip.below::after{ top:auto; bottom:100%; border-top-color:transparent; border-bottom-color:#111; }
+.clear-btn svg{ width: 16px; height: 16px; stroke: #fff; fill: #5B6B7D; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; pointer-events: none; }
 
 /* Copied animation */
 #copyGmail { will-change: transform; }
 .btn.is-copied, .btnprim.is-copied { border-color: var(--accent); background: #134CDD; color: #f2f7ff; }
-.copied-anim { display: inline-flex; align-items: center; gap: 8px; line-height: 24px; animation: popIn 120ms ease-out forwards; }
-.copied-anim svg { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 22; stroke-dashoffset: 22; animation: drawCheck 500ms ease forwards 60ms; }
-@keyframes popIn { from { transform: scale(.96); opacity: .0; } to { transform: scale(1); opacity: 1; } }
-@keyframes drawCheck { to { stroke-dashoffset: 0; } }
+.copied-anim { display: inline-flex; align-items: center; gap: 8px; line-height: 24px; }
 
+/* Badge + brand switch */
 .site-badge { position: absolute; bottom: 20px; left: 20px; height: 70px; pointer-events: none; opacity: 1; }
-
-/* Brand switch */
 .brand-switch { position: fixed; bottom: 20px; right: 20px; z-index: 1000; background:#fff; border:1px solid var(--border); border-radius:14px; padding:4px; display:flex; gap:2px; align-items:center; box-shadow: 0 2px 8px rgba(0,0,0,.08); }
-.brand-switch .seg{ appearance:none; border:0; background:#ffffff; cursor:pointer; width:36px; height:36px; border-radius:10px; display:grid; place-items:center; transition: box-shadow .2s ease, background .2s ease, transform .08s ease; }
-.brand-switch .seg img{ display:block; width:24px; height:24px; }
-.brand-switch .seg:is(:hover,:focus-visible){ outline:none; box-shadow:0 0 0 1px rgba(49,107,255,.22) inset; }
-.brand-switch .seg.is-active{ background:#e3edfe; box-shadow: 0 0 0 1px rgba(212, 224, 255, 0.75) inset, 0 1px 4px rgba(0,0,0,.05); }
-.brand-switch .seg:not(.is-active){ opacity: .3; }
+.brand-switch .seg{ appearance:none; border:0; background:#ffffff; cursor:pointer; width:36px; height:36px; border-radius:10px; display:grid; place-items:center; }
+.brand-switch .seg.is-active{ background:#e3edfe; }
 
 /* Cacher le toggle LinkedIn si inutile */
 #linkedinToggle,
 #linkedinToggle + .slider { display: none !important; }
-
-/* Espace entre "Banner (500x160)" et le bouton "Upload banner" */
-.grid-2 .social-head + .file-input { margin-top: 6px; }
 
 /* ===== Modal (Tutoriel Gmail) ===== */
 .modal { position: fixed; inset: 0; display: none; z-index: 1000; }
@@ -275,106 +187,78 @@ input[type="text"], input[type="email"], input[type="url"], input[type="tel"], i
   display: flex; flex-direction: column; max-height: 92vh;
 }
 .modal__header, .modal__footer { padding: 16px 20px; }
-.modal__header { border-bottom: 1px solid var(--border); }
+.modal__header { border-bottom: 1px solid var(--border); display:flex; align-items:center; gap:12px; }
+.modal__header h2 { margin: 0; font-size: 18px; line-height: 1.2; font-weight: 700; flex: 1; }
 .modal__footer { border-top: 1px solid var(--border); }
 .modal__body { padding: 16px 20px; overflow: auto; }
-.modal__close {
-  border: 0; background: transparent; font-size: 24px; line-height: 1;
-  cursor: pointer; margin-left: auto;
-}
-.steps { display: grid; gap: 12px; padding-left: 1.2rem; }
-.steps li { line-height: 1.5; }
-.tip { margin-top: 12px; border: 1px solid #eee; border-radius: 10px; padding: 10px 12px; background: #fafafa; }
+.modal__close { border: 0; background: transparent; font-size: 24px; line-height: 1; cursor: pointer; margin-left: auto; }
 
-@media (max-width: 520px) {
-  .modal__dialog { margin: 2vh auto; }
-}
+/* Specs */
+.step-figure { margin: 10px 0 0; border: 1px solid var(--border); border-radius: 10px; padding: 8px; background: #fff; }
+.step-figure img { display: block; width: 100%; height: auto; border-radius: 8px; }
+.specs { margin-top: 16px; border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; background: #FAFAFA; }
 
-/* Header of modal: title left, cross right */
-.modal__header {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  border-bottom: 1px solid var(--border);
-  padding: 16px 20px;
+/* Modal shell (unchanged size, compact) */
+.cropper-modal {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,.5);         /* outside the dialog */
+  display: none; align-items: center; justify-content: center;
+  z-index: 9999; padding: 16px;
 }
-.modal__header h2 {
-  margin: 0;
-  font-size: 18px;
-  line-height: 1.2;
-  font-weight: 700;
-  flex: 1; /* push the close button to the right */
-}
-.modal__close {
-  border: 0;
-  background: transparent;
-  font-size: 24px;
-  line-height: 1;
-  cursor: pointer;
-  margin-left: auto; /* ensure it stays at far right */
-  padding: 2px 6px;
+.cropper-modal[aria-hidden="false"] { display: flex; }
+
+.cropper-dialog{
+  background:#fff; color:#111;
+  width:min(640px, 100%); max-height:92vh;
+  display:flex; flex-direction:column;
+  border-radius:14px; box-shadow:0 20px 60px rgba(0,0,0,.25);
+  overflow:hidden;
 }
 
-/* Body and footer keep your existing styles; add figure styling */
-.step-figure {
-  margin: 10px 0 0;
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 8px;
-  background: #fff;
+/* Header */
+.cropper-header{
+  display:flex; align-items:center; justify-content:space-between;
+  padding:10px 14px; border-bottom:1px solid var(--border, #eee);
 }
-.step-figure img {
-  display: block;
+.cropper-header h2{ margin:0; font-size:15px; font-weight:700; }
+.cropper-close{ line-height:1; }
+
+/* Image zone: white background */
+.cropper-canvas-wrap{
+  position: relative;
+  aspect-ratio: 1 / 1;
   width: 100%;
-  height: auto;
-  border-radius: 8px;
+  background: #fff;
+  overflow: hidden;              /* <-- this is the key line */
 }
-.step-figure figcaption {
-  font-size: 12px;
-  color: #697586;
-  margin-top: 6px;
+.cropper-canvas-wrap canvas{
+  width:100%; height:100%;
+  display:block; background:#fff; /* keep white under the image */
+  cursor:grab;
+}
+.cropper-canvas-wrap.dragging canvas{ cursor:grabbing; }
+
+/* Overlay — black only over the image area (inside the wrap) */
+.cropper-overlay{ pointer-events:none; position:absolute; inset:0; }
+.crop-box{
+  position:absolute;
+  border:2px solid #fff;
+  box-shadow:0 0 0 9999px rgba(0,0,0,.65); /* shadow stays inside wrap only */
+  border-radius:8px; /* 50% if you want a round preview */
 }
 
-/* Specs card replacing troubleshooting */
-.specs {
-  margin-top: 16px;
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 12px 14px;
-  background: #FAFAFA;
+/* Zoom bar and toolbar reuse site buttons */
+.cropper-zoombar{
+  display:flex; align-items:center; gap:10px;
+  padding:10px 14px; border-top:1px solid var(--border, #eee);
 }
-.specs h3 {
-  margin: 0 0 8px;
-  font-size: 14px;
-}
-.specs ul {
-  margin: 0;
-  padding-left: 18px;
-  display: grid;
-  gap: 6px;
-}
+.cropper-zoombar label{ font-size:13px; color:#444; }
+.cropper-zoombar input[type="range"]{ flex:1; }
 
-/* Icons inside buttons */
-.btn, .btnprim {
-  display: inline-flex;            /* aligne correctement texte + icône */
-  align-items: center;
-  gap: 8px;                        /* espace entre icône et texte */
+.cropper-toolbar{
+  display:flex; justify-content:space-between; align-items:center; gap:8px;
+  padding:10px 14px; border-top:1px solid var(--border, #eee);
 }
+.cropper-toolbar .group{ display:flex; gap:8px; }
 
-.btn .icon, .btnprim .icon {
-  width: 16px;                     /* tu peux passer à 18/20 si tu veux plus grand */
-  height: 16px;
-  flex: 0 0 auto;
-  display: inline-block;
-}
-
-/* Icone à droite ? */
-/* .btn .icon, .btnprim .icon { order: 1; } */
-
-/* Erreur sous l'input */
-.input-error{
-  margin:6px 0 0;
-  font-size:12px;
-  color:#D92D20;          /* rouge discret */
-}
-
+/* Buttons use your existing .btn / .btnprim /.btn.ghost styles */

@@ -73,22 +73,22 @@ function truncateMiddle(str, max = 36){
   return str.slice(0, half) + '…' + str.slice(-half);
 }
 
-/** Upload → URL publique */
+/** Upload → Public URL */
 async function uploadToSupabaseFolder(file, folderName, userHint='user') {
   if (!supabase) throw new Error('Supabase not configured');
 
   const okTypes = ['image/jpeg','image/png','image/webp','image/gif'];
   const MAX_MB = 8;
   const type = file.type || 'application/octet-stream';
-  if (!okTypes.includes(type)) throw new Error('Format invalide (jpg/png/webp/gif)');
-  if (file.size > MAX_MB * 1024 * 1024) throw new Error(`Fichier trop lourd (> ${MAX_MB} Mo)`);
+  if (!okTypes.includes(type)) throw new Error('Invalid format (jpg/png/webp/gif)');
+  if (file.size > MAX_MB * 1024 * 1024) throw new Error(`File too large (> ${MAX_MB} MB)`);
 
   const id = (crypto && crypto.randomUUID) ? crypto.randomUUID() : String(Date.now());
   const base = slugifyFilename(userHint || 'user');
   const ext  = file.name && file.name.includes('.') ? ('.' + file.name.split('.').pop()) : (type === 'image/webp' ? '.webp' : fileExt(file));
   const path = `${folderName}/${base}-${id}${ext}`;
 
-  const { data, error } = await supabase.storage
+  const { error } = await supabase.storage
     .from(SB.bucket)
     .upload(path, file, {
       upsert: false,
@@ -103,10 +103,10 @@ async function uploadToSupabaseFolder(file, folderName, userHint='user') {
 function showUploadError(kind, err){
   const msg = (err && (err.message || err.error || err.msg)) ? String(err.message || err.error || err.msg) : String(err);
   alert(
-    `Échec de l'hébergement de ${kind}.\n\n` +
+    `Failed to host ${kind}.\n\n` +
     `${msg}\n\n` +
-    `Vérifie: Storage bucket "${SB.bucket}" public, policies RLS (avatars/% ou banners/%), et CORS (Settings → API).\n` +
-    `Regarde la console pour les logs détaillés.`
+    `Check: Storage bucket "${SB.bucket}" public, RLS policies (avatars/% or banners/%), and CORS (Settings → API).\n` +
+    `See console for detailed logs.`
   );
 }
 
@@ -191,7 +191,7 @@ const fileLabels = {
   avatar: fileWrappers.avatar?.querySelector('.file-label'),
   banner: fileWrappers.banner?.querySelector('.file-label'),
 };
-/* ✨ zone d'affichage d'erreur */
+/* inline error (unused now but kept) */
 const errors = { avatar: document.getElementById('avatarError') };
 
 const els  = { previewCard: byId('previewCard'), preview: byId('signaturePreview') };
@@ -246,8 +246,6 @@ function setFileUI(kind, fileName){
   const btn  = (kind === 'avatar') ? fileBtns.avatar : fileBtns.banner;
   const labelEl = fileLabels[kind];
   if (!wrap || !btn || !labelEl) return;
-
-  // ❌ Ne pas masquer l'erreur ici — on laisse les handlers gérer
 
   if (fileName){
     const truncated = truncateMiddle(fileName, 36);
@@ -538,15 +536,258 @@ function applyBrand(key){
   renderPreview();
 }
 
+/* ====== Image Cropper (vanilla + slider) ====== */
+(function(){
+  const loadImage = (fileOrUrl) => new Promise((resolve, reject) => {
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => resolve(img);
+    img.onerror = reject;
+    if (fileOrUrl instanceof File || fileOrUrl instanceof Blob) {
+      const url = URL.createObjectURL(fileOrUrl);
+      img.src = url;
+      img._revoke = () => URL.revokeObjectURL(url);
+    } else if (typeof fileOrUrl === 'string') {
+      img.src = fileOrUrl;
+    } else {
+      reject(new Error('Unsupported image source'));
+    }
+  });
+
+  class SimpleCropper {
+    constructor(){
+      this.modal = document.getElementById('imgCropperModal');
+      this.canvas = document.getElementById('cropperCanvas');
+      this.ctx = this.canvas.getContext('2d', { alpha:false, desynchronized:true });
+      this.overlay = this.modal.querySelector('.crop-box');
+      this.btns = this.modal.querySelectorAll('[data-act]');
+      this.closeBtn = this.modal.querySelector('.cropper-close');
+      this.zoomSlider = document.getElementById('zoomSlider');
+      this.resetBtn   = this.modal.querySelector('[data-act="reset"]');
+
+      this.img = null; this.scale = 1; this.tx = 0; this.ty = 0; this.angle = 0;
+      this.minScale = .1; this.maxScale = 20;
+      this.pointer = { dragging:false, x:0, y:0 };
+      this.cropRatio = 1; this.lockRatio = true;
+
+      this.onWheel = this.onWheel.bind(this);
+      this.onPointerDown = this.onPointerDown.bind(this);
+      this.onPointerMove = this.onPointerMove.bind(this);
+      this.onPointerUp = this.onPointerUp.bind(this);
+      this.resizeObserver = new ResizeObserver(()=>this.fitToView());
+
+      this.canvas.addEventListener('wheel', this.onWheel, { passive:false });
+      this.canvas.addEventListener('pointerdown', this.onPointerDown);
+      window.addEventListener('pointerup', this.onPointerUp);
+      window.addEventListener('pointercancel', this.onPointerUp);
+      this.btns.forEach(b=>b.addEventListener('click', (e)=>this.onAction(e.currentTarget.dataset.act)));
+      this.closeBtn.addEventListener('click', ()=>{ this._resolver?.({cancelled:true}); this.hide(); });
+
+      this.zoomSlider?.addEventListener('input', ()=>{ this.setScale(parseFloat(this.zoomSlider.value)); });
+      this.resetBtn?.addEventListener('click', ()=> this.reset());
+
+      this.resizeObserver.observe(this.canvas);
+    }
+
+    async open(fileOrUrl, { exportSize=512, ratio=1, lockRatio=true } = {}){
+      this._exportSize = exportSize;
+      this.cropRatio = eval(String(ratio));
+      this.lockRatio = !!lockRatio;
+
+      this.modal.setAttribute('aria-hidden','false');
+      this.modal.style.display = 'flex';
+
+      this.img = await loadImage(fileOrUrl);
+      this.angle = 0; this.scale = 1;
+
+      // Canvas sizing
+      const cw = this.canvas.clientWidth, ch = this.canvas.clientHeight;
+      this.canvas.width = Math.round(cw * devicePixelRatio);
+      this.canvas.height = Math.round(ch * devicePixelRatio);
+
+      // Center image on white area (canvas center)
+      const cx = this.canvas.width/2, cy = this.canvas.height/2;
+      this.tx = cx; this.ty = cy;
+
+      this.positionCropBox();
+      this.fitToView(true);
+      this.render();
+
+      const onKey = (e)=>{
+        if (e.key === 'Escape') { this._resolver?.({ cancelled:true }); this.hide(); }
+        if (e.key === '+' || (e.key === '=' && e.shiftKey)) this.zoom(1.1);
+        if (e.key === '-') this.zoom(1/1.1);
+      };
+      this._keyHandler = onKey;
+      window.addEventListener('keydown', onKey);
+
+      return new Promise((resolve)=>{ this._resolver = resolve; });
+    }
+
+    hide(){
+      this.modal.setAttribute('aria-hidden','true');
+      this.modal.style.display = 'none';
+      window.removeEventListener('keydown', this._keyHandler);
+      if (this.img && this.img._revoke) this.img._revoke();
+      this.img = null;
+    }
+
+    onAction(act){
+      switch(act){
+        case 'confirm': this.exportCropped().then(p=>{ this._resolver?.(p); this.hide(); }); break;
+        case 'reset': this.reset(); break;
+      }
+    }
+
+    positionCropBox(){
+      const wrap = this.canvas.getBoundingClientRect();
+      const W = wrap.width, H = wrap.height, r = this.cropRatio;
+
+      // 76% of the visible area, centered
+      let cw = Math.min(W, H * r) * 0.76;
+      let ch = cw / r;
+      if (ch > H * 0.86){ ch = H * 0.86; cw = ch * r; }
+
+      const left = (W - cw)/2, top = (H - ch)/2;
+      Object.assign(this.overlay.style, {
+        width:`${cw}px`, height:`${ch}px`, left:`${left}px`, top:`${top}px`,
+        borderRadius: r === 1 ? '8px' : '8px'
+      });
+    }
+
+    fitToView(reset=false){
+      if (!this.img) return;
+      const cw = this.canvas.clientWidth, ch = this.canvas.clientHeight;
+      this.canvas.width = Math.round(cw * devicePixelRatio);
+      this.canvas.height = Math.round(ch * devicePixelRatio);
+
+      const box = this.overlay.getBoundingClientRect();
+      const wrap = this.canvas.getBoundingClientRect();
+      const cropW = box.width, cropH = box.height;
+
+      const iw = this.img.width, ih = this.img.height;
+      const s = Math.max(cropW/iw, cropH/ih) * 1.02; // cover the crop box slightly
+
+      if (reset){
+        this.scale = s;
+        const cx = this.canvas.width/2, cy = this.canvas.height/2;
+        this.tx = cx; this.ty = cy;
+        this.angle = 0;
+      }
+
+      this.syncZoomSlider();
+      this.render();
+    }
+
+    reset(){
+      this.fitToView(true);
+      this.render();
+    }
+
+    setScale(next){
+      next = Math.min(this.maxScale, Math.max(this.minScale, next));
+      // keep zoom centered on canvas center
+      this.scale = next;
+      this.render();
+    }
+
+    syncZoomSlider(){
+      if (!this.zoomSlider) return;
+      const min = parseFloat(this.zoomSlider.min || '0.5');
+      const max = parseFloat(this.zoomSlider.max || '3');
+      const v = Math.max(min, Math.min(max, this.scale));
+      this.zoomSlider.value = v.toFixed(2);
+    }
+
+    zoom(f){
+      const prev = this.scale;
+      let next = Math.min(this.maxScale, Math.max(this.minScale, prev * f));
+      this.scale = next;
+      this.syncZoomSlider();
+      this.render();
+    }
+
+    onWheel(e){ e.preventDefault(); this.zoom((Math.sign(e.deltaY)>0)?1/1.08:1.08); }
+    onPointerDown(e){
+      this.pointer.dragging=true; this.pointer.x=e.clientX; this.pointer.y=e.clientY;
+      this.canvas.parentNode.classList.add('dragging');
+      this.canvas.setPointerCapture?.(e.pointerId);
+      this.canvas.addEventListener('pointermove', this.onPointerMove);
+    }
+    onPointerMove(e){
+      if(!this.pointer.dragging) return;
+      const dx=(e.clientX-this.pointer.x)*devicePixelRatio, dy=(e.clientY-this.pointer.y)*devicePixelRatio;
+      this.pointer.x=e.clientX; this.pointer.y=e.clientY;
+      this.tx+=dx; this.ty+=dy; this.render();
+    }
+    onPointerUp(e){
+      this.pointer.dragging=false; this.canvas.parentNode.classList.remove('dragging');
+      this.canvas.releasePointerCapture?.(e.pointerId);
+      this.canvas.removeEventListener('pointermove', this.onPointerMove);
+    }
+
+    render(){
+      if(!this.img) return;
+      const ctx=this.ctx, cw=this.canvas.width, ch=this.canvas.height;
+      ctx.save(); ctx.clearRect(0,0,cw,ch); ctx.fillStyle='#fff'; ctx.fillRect(0,0,cw,ch);
+      const cx=cw/2, cy=ch/2;
+      // draw image centered at (tx,ty) in canvas pixel space
+      ctx.translate(this.tx, this.ty);
+      ctx.rotate(this.angle);
+      ctx.scale(this.scale, this.scale);
+      ctx.drawImage(this.img, -this.img.width/2, -this.img.height/2);
+      ctx.restore();
+    }
+
+    async exportCropped(){
+      const box=this.overlay.getBoundingClientRect(), wrap=this.canvas.getBoundingClientRect();
+      const L=(box.left-wrap.left)*devicePixelRatio, T=(box.top-wrap.top)*devicePixelRatio;
+      const W=box.width*devicePixelRatio, H=box.height*devicePixelRatio;
+
+      // render the transformed scene to an offscreen canvas
+      const off=document.createElement('canvas'); off.width=this.canvas.width; off.height=this.canvas.height;
+      const o=off.getContext('2d',{alpha:false}); o.fillStyle='#fff'; o.fillRect(0,0,off.width,off.height);
+      o.save();
+      o.translate(this.tx, this.ty);
+      o.rotate(this.angle);
+      o.scale(this.scale,this.scale);
+      o.drawImage(this.img, -this.img.width/2, -this.img.height/2);
+      o.restore();
+
+      // crop the selection
+      const crop = o.getImageData(L,T,W,H);
+
+      // scale to export size (square for avatar by default)
+      const size = Math.max(64, parseInt(this._exportSize || 512, 10));
+      const outW = size;
+      const outH = Math.round(size / this.cropRatio);
+
+      const out=document.createElement('canvas'); out.width=outW; out.height=outH;
+      const outCtx=out.getContext('2d',{alpha:false});
+      const tmp=document.createElement('canvas'); tmp.width=W; tmp.height=H;
+      tmp.getContext('2d').putImageData(crop,0,0);
+      outCtx.fillStyle='#fff'; outCtx.fillRect(0,0,outW,outH);
+      outCtx.imageSmoothingQuality = 'high';
+      outCtx.drawImage(tmp, 0,0, outW,outH);
+
+      const blob = await new Promise(res=>out.toBlob(res,'image/png',0.92));
+      const dataURL = out.toDataURL('image/png');
+      return { blob, dataURL, width: outW, height: outH };
+    }
+  }
+
+  const __cropper = new SimpleCropper();
+  window.openImageEditor = (fileOrUrl, options) => __cropper.open(fileOrUrl, options || {});
+})();
+
 /* ===== File inputs ===== */
 fileBtns.avatar.addEventListener('click', () => inputs.avatarFile.click());
 fileBtns.banner.addEventListener('click', () => inputs.bannerFile.click());
 
-/* --- AVATAR with square-check (fix: ordre + pas de masquage auto) --- */
+/* --- AVATAR via editor (locked 1:1) --- */
 inputs.avatarFile.addEventListener('change', async (e) => {
   const f = e.target.files?.[0];
 
-  // reset erreur à chaque tentative
   if (errors.avatar) errors.avatar.hidden = true;
 
   if (!f) {
@@ -556,48 +797,26 @@ inputs.avatarFile.addEventListener('change', async (e) => {
     return;
   }
 
-  // Vérifie que l'image est carrée AVANT toute prévisualisation/upload
-  try {
-    const img = await loadImageFromFile(f);
-    const w = img.naturalWidth || img.width;
-    const h = img.naturalHeight || img.height;
-    if (w !== h) {
-      // reset UI + input
-      inputs.avatarFile.value = '';
-      imageCache.avatar = AVATAR_DEFAULT_SRC || PLACEHOLDER_AVATAR;
-      setFileUI('avatar', null);
-      renderPreview();
-
-      // affiche l’erreur (et NE PAS l'effacer dans setFileUI)
-      if (errors.avatar) {
-        errors.avatar.textContent = `The image must be square (actuel: ${w}×${h}).`;
-        errors.avatar.hidden = false;
-      }
-      return;
-    }
-  } catch {
+  // open editor (1:1 locked)
+  const edit = await window.openImageEditor(f, { exportSize: 512, ratio: 1, lockRatio: true });
+  if (edit?.cancelled) {
     inputs.avatarFile.value = '';
-    imageCache.avatar = AVATAR_DEFAULT_SRC || PLACEHOLDER_AVATAR;
-    setFileUI('avatar', null);
-    renderPreview();
-    if (errors.avatar) {
-      errors.avatar.textContent = `Unable to read the image. Please try again with a valid file.`;
-      errors.avatar.hidden = false;
-    }
     return;
   }
 
-  // ✅ OK carré → on peut continuer (aperçu immédiat)
-  imageCache.avatar = await fileToDataURL(f);
+  // local preview (cropped PNG)
+  imageCache.avatar = edit.dataURL;
   setFileUI('avatar', f.name);
   renderPreview();
 
-  // puis compression + upload
+  // compress + upload (WebP)
   try {
-    const { blob } = await compressImage(f, {
+    const pngFile = new File([edit.blob], 'avatar-cropped.png', { type: 'image/png' });
+    const { blob } = await compressImage(pngFile, {
       maxW: AVATAR_MAX_SIDE, maxH: AVATAR_MAX_SIDE,
       quality: WEBP_QUALITY_AVATAR, prefer: 'image/webp'
     });
+
     const newName = `${slugifyFilename(inputs.name?.value || 'user')}-avatar.webp`;
     const webpFile = blobToFile(blob, newName);
 
@@ -605,12 +824,12 @@ inputs.avatarFile.addEventListener('change', async (e) => {
     imageCache.avatar = hostedUrl;
     renderPreview();
   } catch (err) {
-    console.error('[Avatar compress/upload failed]', err);
-    showUploadError('la photo', err);
+    console.error('[Avatar upload failed]', err);
+    showUploadError('avatar', err);
   }
 });
 
-/* --- BANNER (inchangé) --- */
+/* --- BANNER via editor (locked 500x160 ratio) --- */
 inputs.bannerFile.addEventListener('change', async (e) => {
   const f = e.target.files?.[0];
   if (!f) {
@@ -620,12 +839,23 @@ inputs.bannerFile.addEventListener('change', async (e) => {
     return;
   }
 
-  imageCache.banner = await fileToDataURL(f);
+  // target ratio 500:160 ≈ 3.125
+  const R = 500/160;
+  const edit = await window.openImageEditor(f, { exportSize: 1000, ratio: R, lockRatio: true });
+  if (edit?.cancelled) {
+    inputs.bannerFile.value = '';
+    return;
+  }
+
+  // local preview
+  imageCache.banner = edit.dataURL;
   setFileUI('banner', f.name);
   renderPreview();
 
+  // compress + upload
   try {
-    const { blob } = await compressImage(f, { maxW: BANNER_MAX_W, maxH: BANNER_MAX_H, quality: WEBP_QUALITY_BANNER, prefer: 'image/webp' });
+    const pngFile = new File([edit.blob], 'banner-cropped.png', { type: 'image/png' });
+    const { blob } = await compressImage(pngFile, { maxW: BANNER_MAX_W, maxH: BANNER_MAX_H, quality: WEBP_QUALITY_BANNER, prefer: 'image/webp' });
     const newName = `${slugifyFilename(inputs.name?.value || 'user')}-banner.webp`;
     const webpFile = blobToFile(blob, newName);
 
@@ -634,7 +864,7 @@ inputs.bannerFile.addEventListener('change', async (e) => {
     renderPreview();
   } catch (err) {
     console.error('[Banner compress/upload failed]', err);
-    showUploadError('la bannière', err);
+    showUploadError('banner', err);
   }
 });
 
@@ -703,7 +933,7 @@ window.addEventListener('load', () => {
   window.addEventListener('resize', renderPreview);
 });
 
-/* ===== Modal Tutoriel Gmail ===== */
+/* ===== Modal (Gmail Tutorial) ===== */
 (function(){
   const modal = document.getElementById('gmailTutorialModal');
   const openBtn = document.getElementById('gmailTutorialBtn');
@@ -739,12 +969,11 @@ window.addEventListener('load', () => {
     }
   });
 
-  // Ouvrir directement les paramètres Gmail depuis la modal (même URL que ton bouton existant)
   openGmailFromModal?.addEventListener('click', () => {
     window.open('https://mail.google.com/mail/u/0/#settings/general', '_blank');
   });
 
-  // Focus trap minimal dans la modal
+  // minimal focus trap
   modal.addEventListener('keydown', (e) => {
     if (e.key !== 'Tab') return;
     const focusables = modal.querySelectorAll('button, [href], summary, input, select, textarea, [tabindex]:not([tabindex="-1"])');
