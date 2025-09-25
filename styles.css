@@ -204,23 +204,27 @@ input[type="text"], input[type="email"], input[type="url"], input[type="tel"], i
   right: 6px;
   top: 50%;
   transform: translateY(-50%);
-  width: 28px; height: 28px;
+  width: 24px; height: 24px;
   border-radius: 999px;
-  border: 1px solid var(--border);
-  background: #fff;
   display: none; /* visible quand has-file */
   align-items: center;
   justify-content: center;
   cursor: pointer;
+  padding: 0;
+  border: #fff;
 }
 .file-input.has-file .clear-btn{ display: inline-flex; }
 .clear-btn svg{
   width: 16px; height: 16px;
-  stroke: #666; fill: none; stroke-width: 2;
+  stroke: #fff; fill: #5B6B7D; stroke-width: 2;
   stroke-linecap: round; stroke-linejoin: round;
   pointer-events: none;
 }
-.clear-btn:hover{ border-color: #d0d0d0; background: #fafafa; }
+.clear-btn:hover{ 
+  border-color: #d0d0d0; background: #fafafa; 
+}
+
+
 
 /* Highlight (preview only) */
 .preview .preview-card { position: relative; }
