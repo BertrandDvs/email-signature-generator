@@ -1,7 +1,7 @@
 :root{
   --bg:#ffffff;
   --panel:#FBFBFB;
-  --text:#17161B;
+  --text:#213856;
   --muted:#5B6B7D;
   --border:#E6E6E6;
   --accent:#316bff;
@@ -27,7 +27,7 @@ body{
   display:flex; align-items:center; justify-content:space-between; gap:10px;
   border-bottom:1px solid var(--border); background:#fff;
 }
-.app-header h1{ font-size:15px; margin:0; font-weight:700; letter-spacing:.2px; color:#17161B }
+.app-header h1{ font-size:15px; margin:0; font-weight:700; letter-spacing:.2px; color:#213856 }
 .actions{ display:flex; gap:8px; flex-wrap:nowrap }
 .btn{
   appearance:none; cursor:pointer; white-space:nowrap;
@@ -36,7 +36,9 @@ body{
   transition: background .2s ease, border-color .2s ease, color .2s ease;
 }
 .btn:hover{ border-color:#cbcbcb }
-.btn.ghost{ background:transparent; }
+.btn.ghost{ background:linear-gradient(0deg, #FBFBFB -10
+  0%, #FFF 100%);
+}
 
 /* Primary gradient button */
 .btnprim {
@@ -47,6 +49,7 @@ body{
   box-shadow: 0 0 6px 0 rgba(0, 0, 0, 0.02), 0 2px 4px 0 rgba(0, 0, 0, 0.08);
   transition: background .2s ease, border-color .2s ease, color .2s ease;
 }
+
 .btnprim:hover {
   cursor: pointer;
   border: 1px solid var(--primary-color);
@@ -346,3 +349,20 @@ input[type="text"], input[type="email"], input[type="url"], input[type="tel"], i
   display: grid;
   gap: 6px;
 }
+
+/* Icons inside buttons */
+.btn, .btnprim {
+  display: inline-flex;            /* aligne correctement texte + icône */
+  align-items: center;
+  gap: 8px;                        /* espace entre icône et texte */
+}
+
+.btn .icon, .btnprim .icon {
+  width: 16px;                     /* tu peux passer à 18/20 si tu veux plus grand */
+  height: 16px;
+  flex: 0 0 auto;
+  display: inline-block;
+}
+
+/* Icone à droite ? */
+/* .btn .icon, .btnprim .icon { order: 1; } */
