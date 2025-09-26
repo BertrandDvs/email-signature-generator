@@ -309,10 +309,10 @@ input[type="text"], input[type="email"], input[type="url"], input[type="tel"], i
 .specs h3 { margin: 0 0 8px; font-size: 14px; }
 .specs ul { margin: 0; padding-left: 18px; display: grid; gap: 6px; }
 
-/* ===== Image Cropper Modal (compact) ===== */
+/* ===== Image Cropper Modal (compact, clean z-index) ===== */
 .cropper-modal {
   position: fixed; inset: 0;
-  background: rgba(0,0,0,.45); /* dim page behind */
+  background: rgba(0,0,0,.45);
   display: none;
   align-items: center; justify-content: center;
   z-index: 9999; padding: 16px;
@@ -323,7 +323,7 @@ input[type="text"], input[type="email"], input[type="url"], input[type="tel"], i
   background: #fff; color: #111;
   width: min(720px, 100%); max-height: 88vh;
   display: grid;
-  grid-template-rows: auto 1fr auto; /* header, preview, toolbar */
+  grid-template-rows: auto 1fr auto;  /* header, preview, toolbar */
   border-radius: 14px; box-shadow: 0 20px 60px rgba(0,0,0,.25);
   overflow: hidden;
 }
@@ -332,28 +332,44 @@ input[type="text"], input[type="email"], input[type="url"], input[type="tel"], i
 .cropper-header {
   display: flex; align-items: center; justify-content: space-between;
   padding: 10px 12px; border-bottom: 1px solid #eee;
+  position: relative; z-index: 3; /* ⬅️ au-dessus de l’overlay */
 }
 .cropper-header h2 { font-size: 14px; margin: 0; font-weight: 700; color:#213856; }
 .cropper-close { border: 0; background: transparent; font-size: 20px; line-height: 1; cursor: pointer; }
 
-/* Preview area (square) — overlay constrained here only */
+/* Canvas area (square) — overlay confinée ici */
 .cropper-canvas-wrap{
   position: relative;
-  aspect-ratio: 1 / 1;   /* square preview */
-  width: 100%; background: #fff;
-  overflow: hidden;      /* ⬅️ overlay stays inside */
+  aspect-ratio: 1 / 1;
+  width: 100%;
+  background: #fff;
+  overflow: hidden;              /* garde tout dans la zone blanche */
+  z-index: 1;                    /* base */
 }
-.cropper-canvas-wrap canvas { width: 100%; height: 100%; display: block; background: #f0f0f0; }
+.cropper-canvas-wrap canvas {
+  width: 100%; height: 100%;
+  display: block; background: #f0f0f0;
+  position: relative; z-index: 1;
+}
 
-/* Dark overlay INSIDE the preview area only */
+/* Overlay dans la zone blanche seulement */
 .cropper-overlay{
-  position: absolute; inset: 0; pointer-events: none;
+  position: absolute; inset: 0;
+  pointer-events: none;
+  z-index: 2;                    /* au-dessus du canvas, sous header/toolbar */
 }
 .crop-box{
   position: absolute;
   border: 2px solid #fff;
-  box-shadow: 0 0 0 9999px rgba(0,0,0,.65); /* mask outside crop area */
   border-radius: 8px;
+  /* Le masquage sombre utilise un shadow large : il ne recouvre plus la toolbar
+     grâce au z-index plus bas que header/toolbar + overflow du wrap */
+  box-shadow: 0 0 0 9999px rgba(0,0,0,.65);
+}
+
+/* Zoom bar (si tu l’utilises en dehors de la toolbar) */
+.cropper-zoombar{
+  display: none; /* tu peux l’activer si besoin */
 }
 
 /* Toolbar */
@@ -362,20 +378,30 @@ input[type="text"], input[type="email"], input[type="url"], input[type="tel"], i
   grid-template-columns: 1fr auto auto;
   align-items: center;
   padding: 10px; border-top: 1px solid #eee; background:#fff;
+  position: relative; z-index: 3; /* ⬅️ au-dessus de l’overlay */
 }
 .cropper-toolbar .group { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 .cropper-toolbar .inline { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color:#213856; }
 
-.cropper-toolbar input[type="number"], .cropper-toolbar select, .cropper-toolbar input[type="range"]{
-  height: 34px; border-radius: 8px; border: 1px solid #ddd; padding: 0 8px; background:#fff; color:#17161B;
+.cropper-toolbar input[type="number"],
+.cropper-toolbar select,
+.cropper-toolbar input[type="range"]{
+  height: 34px; border-radius: 8px; border: 1px solid #ddd;
+  padding: 0 8px; background:#fff; color:#17161B;
 }
 .cropper-toolbar input[type="range"]{
-  -webkit-appearance:none; appearance:none; width:180px; height: 6px; padding:0; border-radius: 100px; border:0; background:#e9edf3;
+  -webkit-appearance:none; appearance:none; width:180px; height: 6px;
+  padding:0; border-radius: 100px; border:0; background:#e9edf3;
 }
 .cropper-toolbar input[type="range"]::-webkit-slider-thumb{
-  -webkit-appearance:none; appearance:none; width:16px; height:16px; border-radius:50%; background:#316BFF; border:2px solid #fff; box-shadow:0 1px 2px rgba(0,0,0,.2);
+  -webkit-appearance:none; appearance:none; width:16px; height:16px;
+  border-radius:50%; background:#316BFF; border:2px solid #fff;
+  box-shadow:0 1px 2px rgba(0,0,0,.2);
 }
 .cropper-toolbar input[type="range"]::-moz-range-thumb{
-  width:16px; height:16px; border-radius:50%; background:#316BFF; border:2px solid #fff;
+  width:16px; height:16px; border-radius:50%;
+  background:#316BFF; border:2px solid #fff;
 }
-.cropper-toolbar :is(button,select,input):focus { outline: 3px solid #00A2FF33; outline-offset: 2px; }
+.cropper-toolbar :is(button,select,input):focus {
+  outline: 3px solid #00A2FF33; outline-offset: 2px;
+}
