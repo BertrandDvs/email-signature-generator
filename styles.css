@@ -117,7 +117,7 @@ body{
 }
 
 .row{ margin:0; }
-label{ display:block; font-size:12px; color:#697586; margin:4px 0 6px }
+label{ display:block; font-size:12px; color:#566F8F; margin:4px 0 6px }
 input[type="text"], input[type="email"], input[type="url"], input[type="tel"], input[type="number"]{
   width:100%; height:40px; padding:8px 12px;
   border-radius:10px; border:1px solid var(--border);
@@ -200,32 +200,34 @@ input[type="text"], input[type="email"], input[type="url"], input[type="tel"], i
   text-overflow: ellipsis;
   text-align: left;
 }
+
 .file-btn.used{
   background: #F2F7FF;
   border-color: var(--accent);
-  color: #134CDD;
+  color: #316bff;
 }
+
 .clear-btn{
-  position: absolute;
-  right: 6px;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 24px; height: 24px;
-  border-radius: 999px;
-  display: none;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  border: #fff;
+  position:absolute; right:6px; top:50%; transform:translateY(-50%);
+  width:14px; height:14px;
+  display:none; align-items:center; justify-content:center;
+  border:none; border-radius:999px;
+  background:#566F8F; 
+  color:#fff;             /* <-- couleur de la croix */
+  font-size:16px;         /* <-- taille de la croix */
+  line-height:1;          /* évite le décalage vertical */
+  cursor:pointer;
 }
+
 .file-input.has-file .clear-btn{ display: inline-flex; }
+
 .clear-btn svg{
   width: 16px; height: 16px;
-  stroke: #fff; fill: #5B6B7D; stroke-width: 2;
   stroke-linecap: round; stroke-linejoin: round;
   pointer-events: none;
 }
-.clear-btn:hover{ border-color: #d0d0d0; background: #fafafa; }
+
+.clear-btn:hover{ border-color: #d0d0d0; background-color: #213856; }
 
 /* Error under input */
 .input-error{
@@ -302,7 +304,7 @@ input[type="text"], input[type="email"], input[type="url"], input[type="tel"], i
 @media (max-width: 520px) { .modal__dialog { margin: 2vh auto; } }
 .step-figure { margin: 10px 0 0; border: 1px solid var(--border); border-radius: 10px; padding: 8px; background: #fff; }
 .step-figure img { display: block; width: 100%; height: auto; border-radius: 8px; }
-.step-figure figcaption { font-size: 12px; color: #697586; margin-top: 6px; }
+.step-figure figcaption { font-size: 12px; color: #566F8F; margin-top: 6px; }
 .specs { margin-top: 16px; border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; background: #FAFAFA; }
 .specs h3 { margin: 0 0 8px; font-size: 14px; }
 .specs ul { margin: 0; padding-left: 18px; display: grid; gap: 6px; }
