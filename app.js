@@ -693,7 +693,7 @@ function applyBrand(key){
 
     syncZoomSlider(){
       if (!this.zoomSlider) return;
-      const min = parseFloat(this.zoomSlider.min || '0.5');
+      const min = parseFloat(this.zoomSlider.min || '2');
       const max = parseFloat(this.zoomSlider.max || '3');
       const v = Math.max(min, Math.min(max, this.scale));
       this.zoomSlider.value = v.toFixed(2);
