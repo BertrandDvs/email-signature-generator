@@ -10,7 +10,8 @@ const SB = {
   folder:         (window.SUPABASE_CFG && window.SUPABASE_CFG.folder)         || 'avatars',
   bannersFolder:  (window.SUPABASE_CFG && window.SUPABASE_CFG.bannersFolder)  || 'banners',
 };
-const supabase = (SB.url && SB.anon) ? window.supabase.createClient(SB.url, SB.anon) : null;
+
+const sb = (SB.url && SB.anon) ? window.supabase.createClient(SB.url, SB.anon) : null;
 
 /* ===== Image helpers (compression WebP) ===== */
 const AVATAR_MAX_SIDE = 600;
