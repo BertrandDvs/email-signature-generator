@@ -1007,3 +1007,52 @@ window.addEventListener('load', () => {
     else if (!e.shiftKey && document.activeElement === last) { first.focus(); e.preventDefault(); }
   });
 })();
+
+/* ── Preview: mouse glow + gentle 3D tilt ── */
+(function () {
+  const preview = document.querySelector('.panel.preview');
+  const sigBase = document.getElementById('signatureBase');
+  if (!preview || !sigBase) return;
+
+  const MAX_TILT = 6; // degrees
+  let targetRx = 0, targetRy = 0, currentRx = 0, currentRy = 0;
+  let animating = false;
+
+  function lerp(a, b, t) { return a + (b - a) * t; }
+
+  function tick() {
+    currentRx = lerp(currentRx, targetRx, 0.12);
+    currentRy = lerp(currentRy, targetRy, 0.12);
+    sigBase.style.transform = `rotateX(${currentRx}deg) rotateY(${currentRy}deg)`;
+    if (Math.abs(currentRx - targetRx) > 0.01 || Math.abs(currentRy - targetRy) > 0.01) {
+      requestAnimationFrame(tick);
+    } else {
+      sigBase.style.transform = `rotateX(${targetRx}deg) rotateY(${targetRy}deg)`;
+      animating = false;
+    }
+  }
+
+  preview.addEventListener('mousemove', (e) => {
+    const rect = preview.getBoundingClientRect();
+    const nx = (e.clientX - rect.left) / rect.width;   // 0–1
+    const ny = (e.clientY - rect.top)  / rect.height;  // 0–1
+
+    // Glow position
+    preview.style.setProperty('--gx', `${nx * 100}%`);
+    preview.style.setProperty('--gy', `${ny * 100}%`);
+    preview.classList.add('glow-active');
+
+    // Tilt: centre = 0, edges = ±MAX_TILT
+    targetRy =  (nx - 0.5) * 2 * MAX_TILT;
+    targetRx = -(ny - 0.5) * 2 * MAX_TILT;
+
+    if (!animating) { animating = true; requestAnimationFrame(tick); }
+  });
+
+  preview.addEventListener('mouseleave', () => {
+    preview.classList.remove('glow-active');
+    targetRx = 0;
+    targetRy = 0;
+    if (!animating) { animating = true; requestAnimationFrame(tick); }
+  });
+})();
