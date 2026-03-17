@@ -76,7 +76,7 @@ function truncateMiddle(str, max = 36){
 
 /** Upload → Public URL */
 async function uploadToSupabaseFolder(file, folderName, userHint='user') {
-  if (!supabase) throw new Error('Supabase not configured');
+  if (!sb) throw new Error('Supabase not configured');
 
   const okTypes = ['image/jpeg','image/png','image/webp','image/gif'];
   const MAX_MB = 8;
@@ -89,7 +89,7 @@ async function uploadToSupabaseFolder(file, folderName, userHint='user') {
   const ext  = file.name && file.name.includes('.') ? ('.' + file.name.split('.').pop()) : (type === 'image/webp' ? '.webp' : fileExt(file));
   const path = `${folderName}/${base}-${id}${ext}`;
 
-  const { error } = await supabase.storage
+  const { error } = await sb.storage
     .from(SB.bucket)
     .upload(path, file, {
       upsert: false,
@@ -98,7 +98,7 @@ async function uploadToSupabaseFolder(file, folderName, userHint='user') {
     });
   if (error) throw error;
 
-  const pub = supabase.storage.from(SB.bucket).getPublicUrl(path);
+  const pub = sb.storage.from(SB.bucket).getPublicUrl(path);
   return pub.data.publicUrl;
 }
 function showUploadError(kind, err){
