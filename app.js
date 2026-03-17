@@ -142,6 +142,22 @@ const BRAND_PROFILES = {
       linkedinPublic: 'linkedin.png',
       lemcalPublic:   'lemcal.png'
     }
+  },
+  claap: {
+    key: 'claap', site: 'www.claap.io',
+    colors: { separator:'#E6E6E6', name:'#213856', role:'#566F8F', site:'#9BA0AC', text:'#14121A', muted:'#566F8F', accent:'#5B4FE8' },
+    gradient: ['#FFCFDA','#FFA3B8'],
+    switchActiveBg: '#FFE4EA',
+    assets: {
+      logoLocal:   'icons/claap-logo.gif',
+      avatarLocal: 'icons/avatar-placeholder.png',
+      bannerLocal: 'icons/claap-banner.png',
+      logoPublic:   'claap-logo.gif',
+      avatarPublic: 'avatar-placeholder.png',
+      bannerPublic: 'claap-banner.png',
+      linkedinPublic: 'linkedin.png',
+      lemcalPublic:   'lemcal.png'
+    }
   }
 };
 const PUBLIC_ASSET_BASE = 'https://bertranddvs.github.io/email-signature-generator/icons/';
@@ -513,6 +529,7 @@ function applyBrand(key){
   document.documentElement.style.setProperty('--accent', prof.colors.accent);
   document.documentElement.style.setProperty('--grad-start', prof.gradient[0]);
   document.documentElement.style.setProperty('--grad-end',   prof.gradient[1]);
+  document.documentElement.style.setProperty('--switch-active-bg', prof.switchActiveBg || '#e3edfe');
 
   LOGO_SRC           = prof.assets.logoLocal;
   AVATAR_DEFAULT_SRC = prof.assets.avatarLocal;
@@ -527,11 +544,16 @@ function applyBrand(key){
 
   const btnL = document.getElementById('brandLemlist');
   const btnT = document.getElementById('brandTaplio');
+  const btnC = document.getElementById('brandClaap');
   if (btnL && btnT){
     btnL.classList.toggle('is-active', key === 'lemlist');
     btnT.classList.toggle('is-active', key === 'taplio');
     btnL.setAttribute('aria-selected', key === 'lemlist' ? 'true':'false');
     btnT.setAttribute('aria-selected', key === 'taplio' ? 'true':'false');
+  }
+  if (btnC){
+    btnC.classList.toggle('is-active', key === 'claap');
+    btnC.setAttribute('aria-selected', key === 'claap' ? 'true':'false');
   }
 
   renderPreview();

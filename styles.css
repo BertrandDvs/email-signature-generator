@@ -7,6 +7,7 @@
   --accent:#316bff;
   --grad-start:#316BFF;
   --grad-end:#134CDD;
+  --switch-active-bg:#e3edfe;
 }
 
 *{ box-sizing:border-box }
@@ -268,7 +269,7 @@ input[type="text"], input[type="email"], input[type="url"], input[type="tel"], i
 .brand-switch .seg{ appearance:none; border:0; background:#ffffff; cursor:pointer; width:36px; height:36px; border-radius:10px; display:grid; place-items:center; transition: box-shadow .2s ease, background .2s ease, transform .08s ease; }
 .brand-switch .seg img{ display:block; width:24px; height:24px; }
 .brand-switch .seg:is(:hover,:focus-visible){ outline:none; box-shadow:0 0 0 1px rgba(49,107,255,.22) inset; }
-.brand-switch .seg.is-active{ background:#e3edfe; box-shadow: 0 0 0 1px rgba(212, 224, 255, 0.75) inset, 0 1px 4px rgba(0,0,0,.05); }
+.brand-switch .seg.is-active{ background:var(--switch-active-bg); box-shadow: 0 0 0 1px rgba(212, 224, 255, 0.75) inset, 0 1px 4px rgba(0,0,0,.05); }
 .brand-switch .seg:not(.is-active){ opacity: .3; }
 
 /* Hide LinkedIn toggle (kept for structure) */
