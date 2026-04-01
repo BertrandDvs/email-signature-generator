@@ -158,6 +158,22 @@ const BRAND_PROFILES = {
       linkedinPublic: 'linkedin.png',
       lemcalPublic:   'lemcal.png'
     }
+  },
+  lemlistclaap: {
+    key: 'lemlistclaap', site: 'www.lemlist.com', site2: 'www.claap.io',
+    colors: { separator:'#E6E6E6', name:'#213856', role:'#566F8F', site:'#98A1AC', text:'#17161B', muted:'#566F8F', accent:'#965EDB' },
+    gradient: ['#EC6181','#965EDB','#316BFF'],
+    switchActiveBg: '#EDE8FF',
+    assets: {
+      logoLocal:   'icons/lemlistxclaap.gif',
+      avatarLocal: 'icons/avatar-placeholder.png',
+      bannerLocal: 'icons/lemlistclaap-banner.png',
+      logoPublic:   'lemlistxclaap.gif',
+      avatarPublic: 'avatar-placeholder.png',
+      bannerPublic: 'lemlistclaap-banner.png',
+      linkedinPublic: 'linkedin.png',
+      lemcalPublic:   'lemcal.png'
+    }
   }
 };
 const PUBLIC_ASSET_BASE = 'https://bertranddvs.github.io/email-signature-generator/icons/';
@@ -350,6 +366,7 @@ function buildEmailHTML(state, { align = 'center' } = {}) {
 
   const C = THEME.colors;
   const SITE = THEME.site;
+  const SITE2 = THEME['site2'] || null;
 
   const linkedinCell = linkedinEnabled ? `
     <a href="${escapeHtml(linkedin)}" style="display:inline-block; text-decoration:none; line-height:0;">
@@ -428,7 +445,7 @@ function buildEmailHTML(state, { align = 'center' } = {}) {
                           <tbody>
                             ${phoneRow}
                             ${emailRow}
-                            <tr><td><a href="https://${SITE}" style="color:${C.site}; text-decoration:none;">${SITE}</a></td></tr>
+                            <tr><td><a href="https://${SITE}" style="color:${C.site}; text-decoration:none;">${SITE}</a>${SITE2 ? ` <span style="color:${C.site}; opacity:0.45;">×</span> <a href="https://${SITE2}" style="color:${C.site}; text-decoration:none;">${SITE2}</a>` : ''}</td></tr>
                           </tbody>
                         </table>
                       </td>
@@ -523,12 +540,16 @@ function renderPreview() {
 function applyBrand(key){
   const prof = BRAND_PROFILES[key] || BRAND_PROFILES.lemlist;
   CURRENT_BRAND = prof;
-  THEME = { colors: prof.colors, site: prof.site };
+  THEME = { colors: prof.colors, site: prof.site, site2: prof.site2 || null };
   PUBLIC_ASSETS_CURRENT = mapPublicAssets(prof);
 
+  const grad = prof.gradient.length === 3
+    ? `linear-gradient(135deg, ${prof.gradient[0]} 0%, ${prof.gradient[1]} 50%, ${prof.gradient[2]} 100%)`
+    : `linear-gradient(135deg, ${prof.gradient[0]} 0%, ${prof.gradient[1]} 100%)`;
   document.documentElement.style.setProperty('--accent', prof.colors.accent);
   document.documentElement.style.setProperty('--grad-start', prof.gradient[0]);
-  document.documentElement.style.setProperty('--grad-end',   prof.gradient[1]);
+  document.documentElement.style.setProperty('--grad-end',   prof.gradient[prof.gradient.length - 1]);
+  document.documentElement.style.setProperty('--grad', grad);
   document.documentElement.style.setProperty('--switch-active-bg', prof.switchActiveBg || '#e3edfe');
 
   LOGO_SRC           = prof.assets.logoLocal;
@@ -542,9 +563,10 @@ function applyBrand(key){
   setFileUI('avatar', null);
   setFileUI('banner', null);
 
-  const btnL = document.getElementById('brandLemlist');
-  const btnT = document.getElementById('brandTaplio');
-  const btnC = document.getElementById('brandClaap');
+  const btnL  = document.getElementById('brandLemlist');
+  const btnT  = document.getElementById('brandTaplio');
+  const btnC  = document.getElementById('brandClaap');
+  const btnLC = document.getElementById('brandLemlistClaap');
   if (btnL && btnT){
     btnL.classList.toggle('is-active', key === 'lemlist');
     btnT.classList.toggle('is-active', key === 'taplio');
@@ -554,6 +576,10 @@ function applyBrand(key){
   if (btnC){
     btnC.classList.toggle('is-active', key === 'claap');
     btnC.setAttribute('aria-selected', key === 'claap' ? 'true':'false');
+  }
+  if (btnLC){
+    btnLC.classList.toggle('is-active', key === 'lemlistclaap');
+    btnLC.setAttribute('aria-selected', key === 'lemlistclaap' ? 'true':'false');
   }
 
   renderPreview();

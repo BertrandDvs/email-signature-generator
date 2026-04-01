@@ -7,6 +7,7 @@
   --accent:#316bff;
   --grad-start:#316BFF;
   --grad-end:#134CDD;
+  --grad:linear-gradient(135deg, var(--grad-start) 0%, var(--grad-end) 100%);
   --switch-active-bg:#e3edfe;
 }
 
@@ -80,7 +81,7 @@ body{
 
 /* Preview */
 .preview{
-  background: linear-gradient(135deg, var(--grad-start) 0%, var(--grad-end) 100%);
+  background: var(--grad);
   border-color: transparent;
   min-height: 520px;
   padding:0;
