@@ -176,8 +176,8 @@ const BRAND_PROFILES = {
     }
   }
 };
-const PUBLIC_ASSET_BASE = 'https://bertranddvs.github.io/email-signature-generator/icons/';
-const ASSET_VERSION = '2025-09-22-01';
+const PUBLIC_ASSET_BASE = 'https://signature.bdvs.me/icons/';
+const ASSET_VERSION = '2026-09-21-01';
 
 let CURRENT_BRAND = BRAND_PROFILES.lemlist;
 let THEME = { colors: CURRENT_BRAND.colors, site: CURRENT_BRAND.site };
@@ -313,7 +313,7 @@ function sanitizeSrcForEmail(src, kind) {
   if (src && /^https:\/\//i.test(src)) {
     try {
       const u = new URL(src);
-      if (u.hostname.includes('github.io') && ASSET_VERSION && !u.searchParams.has('v')) {
+      if ((u.hostname.includes('github.io') || u.hostname.includes('bdvs.me')) && ASSET_VERSION && !u.searchParams.has('v')) {
         u.searchParams.set('v', ASSET_VERSION);
         return u.toString();
       }
