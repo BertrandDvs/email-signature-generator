@@ -177,7 +177,15 @@ const BRAND_PROFILES = {
   }
 };
 const PUBLIC_ASSET_BASE = 'https://signature.bdvs.me/icons/';
-const ASSET_VERSION = '2026-09-21-01';
+const ASSET_VERSION = '2026-09-21-02';
+
+/* Same cache-buster as the email export, but for the assets the page itself
+   shows. Without it the preview keeps serving the browser's cached copy of a
+   replaced icon, since the filenames never change. */
+function localAsset(path){
+  if (!path || !ASSET_VERSION) return path;
+  return path + (path.includes('?') ? '&' : '?') + 'v=' + encodeURIComponent(ASSET_VERSION);
+}
 
 let CURRENT_BRAND = BRAND_PROFILES.lemlist;
 let THEME = { colors: CURRENT_BRAND.colors, site: CURRENT_BRAND.site };
@@ -190,11 +198,11 @@ const PLACEHOLDER_BANNER = rectSVG(600, 120, '#DDEEE8', 'Banner');
 
 const ASSETS = { linkedin: 'icons/linkedin.png', lemcal: 'icons/lemcal.png' };
 
-let LOGO_SRC           = CURRENT_BRAND.assets.logoLocal;
-let ICON_LINKEDIN_SRC  = ASSETS.linkedin;
-let ICON_LEMCAL_SRC    = ASSETS.lemcal;
-let AVATAR_DEFAULT_SRC = CURRENT_BRAND.assets.avatarLocal;
-let BANNER_DEFAULT_SRC = CURRENT_BRAND.assets.bannerLocal;
+let LOGO_SRC           = localAsset(CURRENT_BRAND.assets.logoLocal);
+let ICON_LINKEDIN_SRC  = localAsset(ASSETS.linkedin);
+let ICON_LEMCAL_SRC    = localAsset(ASSETS.lemcal);
+let AVATAR_DEFAULT_SRC = localAsset(CURRENT_BRAND.assets.avatarLocal);
+let BANNER_DEFAULT_SRC = localAsset(CURRENT_BRAND.assets.bannerLocal);
 
 /* ===== DOM ===== */
 const $ = (sel) => document.querySelector(sel);
@@ -321,7 +329,7 @@ function sanitizeSrcForEmail(src, kind) {
     return src;
   }
   if (kind && PUBLIC_ASSETS_CURRENT[kind]) return PUBLIC_ASSETS_CURRENT[kind];
-  const file = String(src || '').split('/').pop();
+  const file = String(src || '').split('/').pop().split('?')[0];
   return PUBLIC_ASSET_BASE + file + q;
 }
 
@@ -552,9 +560,9 @@ function applyBrand(key){
   document.documentElement.style.setProperty('--grad', grad);
   document.documentElement.style.setProperty('--switch-active-bg', prof.switchActiveBg || '#e3edfe');
 
-  LOGO_SRC           = prof.assets.logoLocal;
-  AVATAR_DEFAULT_SRC = prof.assets.avatarLocal;
-  BANNER_DEFAULT_SRC = prof.assets.bannerLocal;
+  LOGO_SRC           = localAsset(prof.assets.logoLocal);
+  AVATAR_DEFAULT_SRC = localAsset(prof.assets.avatarLocal);
+  BANNER_DEFAULT_SRC = localAsset(prof.assets.bannerLocal);
 
   inputs.avatarFile.value = '';
   inputs.bannerFile.value = '';
