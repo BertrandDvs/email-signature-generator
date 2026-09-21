@@ -177,7 +177,7 @@ const BRAND_PROFILES = {
   }
 };
 const PUBLIC_ASSET_BASE = 'https://signature.bdvs.me/icons/';
-const ASSET_VERSION = '2026-09-21-03';
+const ASSET_VERSION = '2026-09-21-04';
 
 /* Same cache-buster as the email export, but for the assets the page itself
    shows. Without it the preview keeps serving the browser's cached copy of a
