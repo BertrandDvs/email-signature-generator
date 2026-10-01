@@ -177,7 +177,7 @@ const BRAND_PROFILES = {
   }
 };
 const PUBLIC_ASSET_BASE = 'https://signature.bdvs.me/icons/';
-const ASSET_VERSION = '2026-10-01-01';
+const ASSET_VERSION = '2026-10-01-02';
 
 /* Same cache-buster as the email export, but for the assets the page itself
    shows. Without it the preview keeps serving the browser's cached copy of a
@@ -417,7 +417,9 @@ function buildEmailHTML(state, { align = 'center' } = {}) {
     <tr><td style="height:16px;"></td></tr>
     <tr>
       <td align="${align === 'left' ? 'left' : 'center'}">
-        <img src="${banner}" alt="Banner" style="display:block; width:100%; max-width:${PREVIEW_MAX_WIDTH}px; height:auto; border-radius:8px;" />
+        <a href="https://${SITE}" target="_blank" style="display:block; text-decoration:none; line-height:0;">
+          <img src="${banner}" alt="${escapeHtml(SITE)}" style="display:block; width:100%; max-width:${PREVIEW_MAX_WIDTH}px; height:auto; border:0; border-radius:8px;" />
+        </a>
       </td>
     </tr>` : '';
 
