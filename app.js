@@ -17,8 +17,8 @@ const sb = (SB.url && SB.anon) ? window.supabase.createClient(SB.url, SB.anon) :
 const AVATAR_MAX_SIDE = 600;
 const BANNER_MAX_W    = 1200;
 const BANNER_MAX_H    = 600;
-const WEBP_QUALITY_AVATAR = 0.86;
-const WEBP_QUALITY_BANNER = 0.84;
+const AVATAR_QUALITY = 0.88;
+const BANNER_QUALITY = 0.92;
 
 function loadImageFromFile(file){
   return new Promise((resolve, reject) => {
@@ -32,7 +32,7 @@ function loadImageFromFile(file){
 function canvasToBlob(canvas, type, quality){
   return new Promise(res => canvas.toBlob(b => res(b), type, quality));
 }
-async function compressImage(file, {maxW, maxH, quality=0.85, prefer='image/webp'}){
+async function compressImage(file, {maxW, maxH, quality=0.85, prefer='image/jpeg'}){
   const img = await loadImageFromFile(file);
   const inW = img.naturalWidth || img.width;
   const inH = img.naturalHeight || img.height;
@@ -57,7 +57,7 @@ async function compressImage(file, {maxW, maxH, quality=0.85, prefer='image/webp
 }
 
 function blobToFile(blob, filename){
-  try { return new File([blob], filename, { type: blob.type || 'image/webp' }); }
+  try { return new File([blob], filename, { type: blob.type || 'image/jpeg' }); }
   catch { blob.name = filename; return blob; }
 }
 
@@ -177,7 +177,7 @@ const BRAND_PROFILES = {
   }
 };
 const PUBLIC_ASSET_BASE = 'https://signature.bdvs.me/icons/';
-const ASSET_VERSION = '2026-09-21-04';
+const ASSET_VERSION = '2026-10-01-01';
 
 /* Same cache-buster as the email export, but for the assets the page itself
    shows. Without it the preview keeps serving the browser's cached copy of a
@@ -338,16 +338,30 @@ const imageCache = {
   avatar: AVATAR_DEFAULT_SRC || PLACEHOLDER_AVATAR,
   banner: BANNER_DEFAULT_SRC || PLACEHOLDER_BANNER,
 };
+/* Mail filters flag plain http:// links. Upgrade them rather than passing a
+   pasted link straight through to the signature. */
+function forceHttps(url){
+  const u = String(url || '').trim();
+  if (!u) return u;
+  const low = u.toLowerCase();
+  if (low.startsWith('http://'))  return 'https://' + u.slice(7);
+  if (low.startsWith('https://')) return u;
+  if (low.startsWith('mailto:') || low.startsWith('tel:')) return u;
+  let bare = u;
+  while (bare.charAt(0) === '/') bare = bare.slice(1);
+  return 'https://' + bare;
+}
+
 function collectState() {
   const name = inputs.name.value.trim();
   const role = inputs.role.value.trim();
   const email = inputs.email.value.trim();
   const phone = inputs.phone.value.trim();
 
-  const linkedin = inputs.linkedin.value.trim();
+  const linkedin = forceHttps(inputs.linkedin.value.trim());
   const linkedinEnabled = !!inputs.linkedinToggle.checked && !!linkedin;
 
-  const lemcal = inputs.lemcal.value.trim();
+  const lemcal = forceHttps(inputs.lemcal.value.trim());
   const lemcalEnabled = !!inputs.lemcalToggle.checked && !!lemcal;
 
   const bannerEnabled = !!(inputs.bannerToggle ? inputs.bannerToggle.checked : true);
@@ -871,13 +885,13 @@ inputs.avatarFile.addEventListener('change', async (e) => {
     const pngFile = new File([edit.blob], 'avatar-cropped.png', { type: 'image/png' });
     const { blob } = await compressImage(pngFile, {
       maxW: AVATAR_MAX_SIDE, maxH: AVATAR_MAX_SIDE,
-      quality: WEBP_QUALITY_AVATAR, prefer: 'image/webp'
+      quality: AVATAR_QUALITY, prefer: 'image/jpeg'
     });
 
-    const newName = `${slugifyFilename(inputs.name?.value || 'user')}-avatar.webp`;
-    const webpFile = blobToFile(blob, newName);
+    const newName = `${slugifyFilename(inputs.name?.value || 'user')}-avatar.jpg`;
+    const uploadFile = blobToFile(blob, newName);
 
-    const hostedUrl = await uploadToSupabaseFolder(webpFile, SB.folder, inputs.name?.value || 'user');
+    const hostedUrl = await uploadToSupabaseFolder(uploadFile, SB.folder, inputs.name?.value || 'user');
     imageCache.avatar = hostedUrl;
     renderPreview();
   } catch (err) {
@@ -912,11 +926,11 @@ inputs.bannerFile.addEventListener('change', async (e) => {
   // compress + upload
   try {
     const pngFile = new File([edit.blob], 'banner-cropped.png', { type: 'image/png' });
-    const { blob } = await compressImage(pngFile, { maxW: BANNER_MAX_W, maxH: BANNER_MAX_H, quality: WEBP_QUALITY_BANNER, prefer: 'image/webp' });
-    const newName = `${slugifyFilename(inputs.name?.value || 'user')}-banner.webp`;
-    const webpFile = blobToFile(blob, newName);
+    const { blob } = await compressImage(pngFile, { maxW: BANNER_MAX_W, maxH: BANNER_MAX_H, quality: BANNER_QUALITY, prefer: 'image/png' });
+    const newName = `${slugifyFilename(inputs.name?.value || 'user')}-banner.png`;
+    const uploadFile = blobToFile(blob, newName);
 
-    const hostedUrl = await uploadToSupabaseFolder(webpFile, SB.bannersFolder, (inputs.name?.value || 'user') + '-banner');
+    const hostedUrl = await uploadToSupabaseFolder(uploadFile, SB.bannersFolder, (inputs.name?.value || 'user') + '-banner');
     imageCache.banner = hostedUrl;
     renderPreview();
   } catch (err) {
